@@ -17,6 +17,11 @@ pub enum Error {
 }
 
 #[must_use]
+pub fn whats_next(truncated_source: &str) -> Vec<String> {
+    qsc_frontend::compile::whats_next(truncated_source)
+}
+
+#[must_use]
 pub fn compile(
     store: &PackageStore,
     dependencies: &[PackageId],

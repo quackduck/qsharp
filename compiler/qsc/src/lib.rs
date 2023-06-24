@@ -19,7 +19,7 @@ pub mod typeck {
     pub use qsc_frontend::typeck::Table;
 }
 
-pub use qsc_frontend::compile::{PackageStore, SourceContents, SourceMap, SourceName};
+pub use qsc_frontend::compile::{whats_next, PackageStore, SourceContents, SourceMap, SourceName};
 
 pub mod hir {
     pub use qsc_hir::{hir::*, *};

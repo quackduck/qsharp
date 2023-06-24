@@ -359,6 +359,11 @@ pub fn std(store: &PackageStore) -> CompileUnit {
     unit
 }
 
+#[must_use]
+pub fn whats_next(truncated_source: &str) -> Vec<String> {
+    qsc_parse::whats_next(truncated_source)
+}
+
 fn parse_all(sources: &SourceMap) -> (ast::Package, Vec<qsc_parse::Error>) {
     let mut namespaces = Vec::new();
     let mut errors = Vec::new();

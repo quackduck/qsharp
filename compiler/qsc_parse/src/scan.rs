@@ -18,6 +18,8 @@ pub(super) struct Scanner<'a> {
     errors: Vec<Error>,
     peek: Token,
     offset: u32,
+    exhausted: bool,
+    pub last_expected: Vec<(u32, TokenKind)>,
 }
 
 impl<'a> Scanner<'a> {
@@ -34,7 +36,16 @@ impl<'a> Scanner<'a> {
                 .collect(),
             peek: peek.unwrap_or_else(|| eof(input.len())),
             offset: 0,
+            exhausted: false,
+            last_expected: Vec::new(),
         }
+    }
+
+    pub(super) fn peek_expectantly(&mut self, expect_token: TokenKind) -> bool {
+        if (!self.exhausted) {
+            self.last_expected.push((self.offset, expect_token));
+        }
+        self.peek.kind == expect_token
     }
 
     pub(super) fn peek(&self) -> Token {
@@ -55,6 +66,9 @@ impl<'a> Scanner<'a> {
     pub(super) fn advance(&mut self) {
         if self.peek.kind != TokenKind::Eof {
             self.offset = self.peek.span.hi;
+            if self.offset != self.input.len() as u32 {
+                self.last_expected.clear();
+            }
             let (peek, errors) = next_ok(&mut self.tokens);
             self.errors
                 .extend(errors.into_iter().map(|e| Error(ErrorKind::Lex(e))));
@@ -86,6 +100,10 @@ impl<'a> Scanner<'a> {
                 self.advance();
                 break;
             } else if peek == TokenKind::Eof || self.barriers.iter().any(|&b| contains(peek, b)) {
+                if peek == TokenKind::Eof {
+                    // stop accumulating expected token kinds
+                    self.exhausted = true;
+                }
                 break;
             } else {
                 self.advance();

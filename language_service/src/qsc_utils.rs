@@ -42,6 +42,10 @@ pub(crate) fn compile_document(source_name: &str, source_contents: &str) -> Comp
     }
 }
 
+pub(crate) fn whats_next(truncated_source: &str) -> Vec<String> {
+    compile::whats_next(truncated_source)
+}
+
 pub(crate) fn span_contains(span: Span, offset: u32) -> bool {
     offset >= span.lo && offset < span.hi
 }

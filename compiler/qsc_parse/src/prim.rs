@@ -34,7 +34,7 @@ impl FinalSep {
 }
 
 pub(super) fn token(s: &mut Scanner, t: TokenKind) -> Result<()> {
-    if s.peek().kind == t {
+    if s.peek_expectantly(t) {
         s.advance();
         Ok(())
     } else {
@@ -44,7 +44,7 @@ pub(super) fn token(s: &mut Scanner, t: TokenKind) -> Result<()> {
 
 pub(super) fn ident(s: &mut Scanner) -> Result<Box<Ident>> {
     let peek = s.peek();
-    if peek.kind == TokenKind::Ident {
+    if s.peek_expectantly(TokenKind::Ident) {
         let name = s.read().into();
         s.advance();
         Ok(Box::new(Ident {

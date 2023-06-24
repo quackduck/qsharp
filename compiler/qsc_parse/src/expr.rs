@@ -348,6 +348,16 @@ fn expr_interpolate(s: &mut Scanner) -> Result<Vec<StringComponent>> {
 
 fn lit(s: &mut Scanner) -> Result<Option<Lit>> {
     let lexeme = s.read();
+
+    s.peek_expectantly(TokenKind::Keyword(Keyword::True));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::Zero));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::One));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliZ));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::False));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliX));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliI));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliY));
+
     let token = s.peek();
     match lit_token(lexeme, token) {
         Ok(Some(lit)) => {

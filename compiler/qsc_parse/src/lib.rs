@@ -82,6 +82,31 @@ trait Parser<T>: FnMut(&mut Scanner) -> Result<T> {}
 
 impl<T, F: FnMut(&mut Scanner) -> Result<T>> Parser<T> for F {}
 
+pub fn whats_next(input: &str) -> Vec<String> {
+    let mut scanner = Scanner::new(input);
+    let mut last_expected_tokens = Vec::new();
+    let parse_result = item::parse_namespaces(&mut scanner);
+    last_expected_tokens.append(&mut scanner.last_expected);
+    let (_, source_errors) = match parse_result {
+        Ok(namespaces) => (namespaces, scanner.into_errors()),
+        Err(error) => {
+            let mut errors = scanner.into_errors();
+            errors.push(error);
+            (Vec::new(), errors)
+        }
+    };
+
+    let mut items = vec![format!("__DEBUG {}", input.len())];
+    items.push(format!("__DEBUG {:?}", last_expected_tokens,));
+    items.push(format!("__DEBUG {:?}", source_errors,));
+    items.extend(last_expected_tokens.into_iter().filter_map(|x| match x.1 {
+        TokenKind::Ident => Some("IDENTIFIER_".to_string()),
+        TokenKind::Keyword(keyword) => Some(keyword.to_string()),
+        _ => None,
+    }));
+    items
+}
+
 pub fn namespaces(input: &str) -> (Vec<Namespace>, Vec<Error>) {
     let mut scanner = Scanner::new(input);
     match item::parse_namespaces(&mut scanner) {
