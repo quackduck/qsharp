@@ -47,6 +47,9 @@ pub(crate) fn compile_with_fake_stdlib(source_name: &str, source_contents: &str)
     Compilation {
         package_store,
         std_package_id,
+        ast_package: compile_unit.ast_package,
+        names: compile_unit.names,
+        tys: compile_unit.tys,
         package: compile_unit.package,
         source_map: compile_unit.sources,
         errors,

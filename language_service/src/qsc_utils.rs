@@ -2,7 +2,9 @@
 // Licensed under the MIT License.
 
 use qsc::hir::{Package, PackageId};
-use qsc::Span;
+use qsc::resolve::Names;
+use qsc::typeck::Table;
+use qsc::{ast, Span};
 use qsc::{
     compile::{self, Error},
     PackageStore, SourceMap,
@@ -13,6 +15,9 @@ use qsc::{
 pub(crate) struct Compilation {
     pub package_store: PackageStore,
     pub std_package_id: PackageId,
+    pub ast_package: ast::Package,
+    pub names: Names,
+    pub tys: Table,
     pub package: Package,
     pub source_map: SourceMap,
     pub errors: Vec<Error>,
@@ -28,6 +33,9 @@ pub(crate) fn compile_document(source_name: &str, source_contents: &str) -> Comp
     Compilation {
         package_store,
         std_package_id,
+        ast_package: compile_unit.ast_package,
+        names: compile_unit.names,
+        tys: compile_unit.tys,
         package: compile_unit.package,
         source_map: compile_unit.sources,
         errors,
