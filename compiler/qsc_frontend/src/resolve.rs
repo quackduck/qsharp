@@ -100,6 +100,14 @@ impl Scope {
         };
         items.get(name)
     }
+
+    fn items(&self, kind: NameKind) -> Vec<&Rc<str>> {
+        let items = match kind {
+            NameKind::Ty => &self.tys,
+            NameKind::Term => &self.terms,
+        };
+        items.keys().collect()
+    }
 }
 
 struct GlobalScope {
@@ -115,6 +123,17 @@ impl GlobalScope {
             NameKind::Term => &self.terms,
         };
         namespaces.get(namespace).and_then(|items| items.get(name))
+    }
+
+    fn get_all(&self, kind: NameKind, namespace: &str) -> Vec<&Rc<str>> {
+        let namespaces = match kind {
+            NameKind::Ty => &self.tys,
+            NameKind::Term => &self.terms,
+        };
+        namespaces
+            .get(namespace)
+            .and_then(|items| Some(items.keys().collect()))
+            .unwrap_or(Vec::new())
     }
 }
 
@@ -172,6 +191,20 @@ impl Resolver {
 
     pub(super) fn with<'a>(&'a mut self, assigner: &'a mut Assigner) -> With<'a> {
         With {
+            finder_mode: None,
+            resolver: self,
+            assigner,
+            in_block: false,
+        }
+    }
+
+    pub(super) fn with_finder_mode<'a>(
+        &'a mut self,
+        assigner: &'a mut Assigner,
+        offset: u32,
+    ) -> With<'a> {
+        With {
+            finder_mode: Some((offset, HashSet::new(), HashSet::new())),
             resolver: self,
             assigner,
             in_block: false,
@@ -184,6 +217,7 @@ impl Resolver {
 
     fn resolve_ident(&mut self, kind: NameKind, name: &Ident) {
         let namespace = None;
+
         match resolve(kind, &self.globals, &self.scopes, name, &namespace) {
             Ok(id) => self.names.insert(name.id, id),
             Err(err) => self.errors.push(err),
@@ -193,6 +227,7 @@ impl Resolver {
     fn resolve_path(&mut self, kind: NameKind, path: &ast::Path) {
         let name = &path.name;
         let namespace = &path.namespace;
+
         match resolve(kind, &self.globals, &self.scopes, name, namespace) {
             Ok(id) => self.names.insert(path.id, id),
             Err(err) => self.errors.push(err),
@@ -259,23 +294,51 @@ impl Resolver {
 }
 
 pub(super) struct With<'a> {
+    pub finder_mode: Option<(u32, HashSet<Rc<str>>, HashSet<Rc<str>>)>,
     resolver: &'a mut Resolver,
     assigner: &'a mut Assigner,
     in_block: bool,
 }
 
 impl With<'_> {
-    fn with_scope(&mut self, kind: ScopeKind, f: impl FnOnce(&mut Self)) {
+    fn with_scope(&mut self, span: Span, kind: ScopeKind, f: impl FnOnce(&mut Self)) {
         self.resolver.scopes.push(Scope::new(kind));
         f(self);
+
+        if let Some(filter) = &mut self.finder_mode {
+            let (offset, ref mut term_set, ref mut ty_set) = filter;
+            if span.lo <= *offset && span.hi > *offset {
+                // Of course we're going do to this and
+                // throw the result away a bunch of times
+                // if we're in nested scopes
+                let terms = gather_names(
+                    NameKind::Term,
+                    &self.resolver.globals,
+                    &self.resolver.scopes,
+                    &None, // TODO: need to try with namespaces for path
+                );
+                term_set.clear();
+                term_set.extend(terms);
+
+                let tys = gather_names(
+                    NameKind::Ty,
+                    &self.resolver.globals,
+                    &self.resolver.scopes,
+                    &None, // TODO: need to try with namespaces for path
+                );
+                ty_set.clear();
+                ty_set.extend(tys);
+            }
+        }
+
         self.resolver
             .scopes
             .pop()
             .expect("pushed scope should be the last element on the stack");
     }
 
-    fn with_pat(&mut self, kind: ScopeKind, pat: &ast::Pat, f: impl FnOnce(&mut Self)) {
-        self.with_scope(kind, |visitor| {
+    fn with_pat(&mut self, span: Span, kind: ScopeKind, pat: &ast::Pat, f: impl FnOnce(&mut Self)) {
+        self.with_scope(span, kind, |visitor| {
             visitor.resolver.bind_pat(pat);
             f(visitor);
         });
@@ -309,7 +372,7 @@ impl AstVisitor<'_> for With<'_> {
         }
 
         let kind = ScopeKind::Namespace(Rc::clone(&namespace.name.name));
-        self.with_scope(kind, |visitor| {
+        self.with_scope(namespace.span, kind, |visitor| {
             for item in namespace.items.iter() {
                 if let ast::ItemKind::Open(name, alias) = &*item.kind {
                     visitor.resolver.bind_open(name, alias);
@@ -321,7 +384,7 @@ impl AstVisitor<'_> for With<'_> {
     }
 
     fn visit_callable_decl(&mut self, decl: &ast::CallableDecl) {
-        self.with_scope(ScopeKind::Callable, |visitor| {
+        self.with_scope(decl.span, ScopeKind::Callable, |visitor| {
             visitor.resolver.bind_type_parameters(decl);
             visitor.resolver.bind_pat(&decl.input);
             ast_visit::walk_callable_decl(visitor, decl);
@@ -330,7 +393,7 @@ impl AstVisitor<'_> for With<'_> {
 
     fn visit_spec_decl(&mut self, decl: &ast::SpecDecl) {
         if let ast::SpecBody::Impl(input, block) = &decl.body {
-            self.with_pat(ScopeKind::Block, input, |visitor| {
+            self.with_pat(decl.span, ScopeKind::Block, input, |visitor| {
                 visitor.visit_block(block);
             });
         } else {
@@ -353,7 +416,7 @@ impl AstVisitor<'_> for With<'_> {
     fn visit_block(&mut self, block: &ast::Block) {
         let prev = self.in_block;
         self.in_block = true;
-        self.with_scope(ScopeKind::Block, |visitor| {
+        self.with_scope(block.span, ScopeKind::Block, |visitor| {
             for stmt in block.stmts.iter() {
                 if let ast::StmtKind::Item(item) = &*stmt.kind {
                     visitor.resolver.bind_local_item(visitor.assigner, item);
@@ -397,10 +460,12 @@ impl AstVisitor<'_> for With<'_> {
         match &*expr.kind {
             ast::ExprKind::For(pat, iter, block) => {
                 self.visit_expr(iter);
-                self.with_pat(ScopeKind::Block, pat, |visitor| visitor.visit_block(block));
+                self.with_pat(expr.span, ScopeKind::Block, pat, |visitor| {
+                    visitor.visit_block(block)
+                });
             }
             ast::ExprKind::Lambda(_, input, output) => {
-                self.with_pat(ScopeKind::Block, input, |visitor| {
+                self.with_pat(expr.span, ScopeKind::Block, input, |visitor| {
                     visitor.visit_expr(output);
                 });
             }
@@ -598,6 +663,43 @@ fn bind_global_item(
     }
 }
 
+fn gather_names(
+    kind: NameKind,
+    globals: &GlobalScope,
+    locals: &[Scope],
+    namespace: &Option<Box<Ident>>,
+) -> Vec<Rc<str>> {
+    let mut vars = true;
+    let mut names = Vec::new();
+    let namespace = namespace.as_ref().map_or("", |i| &i.name);
+    for scope in locals.iter().rev() {
+        if namespace.is_empty() {
+            names.extend(gather_scope_locals(kind, globals, scope, vars));
+        }
+
+        if let Some(namespaces) = scope.opens.get(namespace) {
+            names.extend(gather_explicit_opens(kind, globals, namespaces));
+        }
+
+        if scope.kind == ScopeKind::Callable {
+            // Since local callables are not closures, hide local variables in parent scopes.
+            vars = false;
+        }
+    }
+
+    if namespace.is_empty() {
+        names.extend(gather_implicit_opens(kind, globals, PRELUDE));
+    }
+
+    names.extend(
+        globals
+            .get_all(kind, namespace)
+            .into_iter()
+            .map(|s| s.clone()),
+    );
+    names
+}
+
 fn resolve(
     kind: NameKind,
     globals: &GlobalScope,
@@ -707,6 +809,46 @@ fn resolve_scope_locals(
     None
 }
 
+fn gather_scope_locals(
+    kind: NameKind,
+    globals: &GlobalScope,
+    scope: &Scope,
+    vars: bool,
+) -> Vec<Rc<str>> {
+    let mut names = Vec::new();
+    if vars {
+        match kind {
+            NameKind::Term => {
+                names.extend(scope.vars.iter().map(|id| id.0));
+            }
+            NameKind::Ty => {
+                names.extend(scope.ty_vars.iter().map(|id| id.0));
+            }
+        }
+    }
+
+    names.extend(scope.items(kind).iter());
+
+    if let ScopeKind::Namespace(namespace) = &scope.kind {
+        names.extend(globals.get_all(kind, namespace).iter());
+    }
+
+    // Not sure why
+    names.into_iter().map(|s| s.clone()).collect()
+}
+
+fn gather_implicit_opens(
+    kind: NameKind,
+    globals: &GlobalScope,
+    namespaces: impl IntoIterator<Item = impl AsRef<str>>,
+) -> Vec<Rc<str>> {
+    let mut names = Vec::new();
+    for namespace in namespaces {
+        names.extend(globals.get_all(kind, namespace.as_ref()));
+    }
+    names.into_iter().map(|s| s.clone()).collect()
+}
+
 fn resolve_implicit_opens(
     kind: NameKind,
     globals: &GlobalScope,
@@ -721,6 +863,18 @@ fn resolve_implicit_opens(
         }
     }
     candidates
+}
+
+fn gather_explicit_opens<'a>(
+    kind: NameKind,
+    globals: &GlobalScope,
+    opens: impl IntoIterator<Item = &'a Open>,
+) -> Vec<Rc<str>> {
+    let mut names = Vec::new();
+    for open in opens {
+        names.extend(globals.get_all(kind, &open.namespace));
+    }
+    names.into_iter().map(|s| s.clone()).collect()
 }
 
 fn resolve_explicit_opens<'a>(

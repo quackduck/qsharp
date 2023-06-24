@@ -42,7 +42,7 @@ impl<'a> Scanner<'a> {
     }
 
     pub(super) fn peek_expectantly(&mut self, expect_token: TokenKind) -> bool {
-        if (!self.exhausted) {
+        if !self.exhausted {
             self.last_expected.push((self.offset, expect_token));
         }
         self.peek.kind == expect_token

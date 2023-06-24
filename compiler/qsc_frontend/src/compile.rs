@@ -364,6 +364,43 @@ pub fn whats_next(truncated_source: &str) -> Vec<String> {
     qsc_parse::whats_next(truncated_source)
 }
 
+#[must_use]
+pub fn gather_names(
+    store: &PackageStore,
+    dependencies: &[PackageId],
+    package: &ast::Package,
+    offset: u32,
+) -> Vec<String> {
+    let mut assigner = HirAssigner::new();
+
+    let mut globals = resolve::GlobalTable::new();
+    if let Some(unit) = store.get(PackageId::CORE) {
+        globals.add_external_package(PackageId::CORE, &unit.package);
+    }
+
+    for &id in dependencies {
+        let unit = store
+            .get(id)
+            .expect("dependency should be in package store before compilation");
+        globals.add_external_package(id, &unit.package);
+    }
+
+    let mut errors = globals.add_local_package(&mut assigner, package);
+    let mut resolver = Resolver::new(globals);
+
+    let mut visitor = resolver.with_finder_mode(&mut assigner, offset);
+
+    visitor.visit_package(package);
+
+    let result = &visitor.finder_mode.expect("we have to be in finder mode");
+    let (_, terms, tys) = result;
+
+    let mut names = Vec::new();
+    names.extend(terms.iter().map(std::string::ToString::to_string));
+    names.extend(tys.iter().map(std::string::ToString::to_string));
+    names
+}
+
 fn parse_all(sources: &SourceMap) -> (ast::Package, Vec<qsc_parse::Error>) {
     let mut namespaces = Vec::new();
     let mut errors = Vec::new();

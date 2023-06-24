@@ -5,9 +5,12 @@
 mod tests;
 
 use crate::qsc_utils::{self, map_offset, span_contains, Compilation};
-use qsc::hir::{
-    visit::{walk_item, Visitor},
-    ItemKind, {Block, Item, Package},
+use qsc::{
+    gather_names,
+    hir::{
+        visit::{walk_item, Visitor},
+        ItemKind, {Block, Item, Package},
+    },
 };
 use std::collections::HashSet;
 
@@ -109,10 +112,25 @@ pub(crate) fn get_completions(
     // }
 
     for item in qsc_utils::whats_next(truncated_source) {
-        items.push(CompletionItem {
-            label: item,
-            kind: CompletionItemKind::Issue,
-        });
+        if item == "IDENTIFIER_" {
+            for name in gather_names(
+                &compilation.package_store,
+                &[compilation.std_package_id],
+                &compilation.ast_package,
+                offset,
+            ) {
+                items.push(CompletionItem {
+                    label: name.to_string(),
+                    kind: CompletionItemKind::Function,
+                });
+            }
+        } else {
+            // only other kind is a keyword
+            items.push(CompletionItem {
+                label: item,
+                kind: CompletionItemKind::Keyword,
+            });
+        }
     }
 
     CompletionList { items }
