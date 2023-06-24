@@ -4,7 +4,7 @@
 use qsc::hir::{Package, PackageId};
 use qsc::resolve::Names;
 use qsc::typeck::Table;
-use qsc::{ast, Span};
+use qsc::{ast, CompletionConstraint, Span};
 use qsc::{
     compile::{self, Error},
     PackageStore, SourceMap,
@@ -42,7 +42,7 @@ pub(crate) fn compile_document(source_name: &str, source_contents: &str) -> Comp
     }
 }
 
-pub(crate) fn whats_next(truncated_source: &str) -> Vec<String> {
+pub(crate) fn whats_next(truncated_source: &str) -> Vec<CompletionConstraint> {
     compile::whats_next(truncated_source)
 }
 

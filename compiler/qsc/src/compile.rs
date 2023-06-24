@@ -3,7 +3,10 @@
 
 use crate::error::WithSource;
 use miette::{Diagnostic, Report};
-use qsc_frontend::compile::{CompileUnit, PackageStore, SourceMap};
+use qsc_frontend::{
+    compile::{CompileUnit, PackageStore, SourceMap},
+    CompletionConstraint,
+};
 use qsc_hir::hir::PackageId;
 use qsc_passes::{run_core_passes, run_default_passes};
 use thiserror::Error;
@@ -17,7 +20,7 @@ pub enum Error {
 }
 
 #[must_use]
-pub fn whats_next(truncated_source: &str) -> Vec<String> {
+pub fn whats_next(truncated_source: &str) -> Vec<CompletionConstraint> {
     qsc_frontend::compile::whats_next(truncated_source)
 }
 

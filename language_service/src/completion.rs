@@ -11,6 +11,7 @@ use qsc::{
         visit::{walk_item, Visitor},
         ItemKind, {Block, Item, Package},
     },
+    GatherOptions,
 };
 use std::collections::HashSet;
 
@@ -24,6 +25,7 @@ pub enum CompletionItemKind {
     Module,
     Keyword,
     Issue,
+    Interface,
 }
 
 #[derive(Debug)]
@@ -46,12 +48,6 @@ pub(crate) fn get_completions(
 ) -> CompletionList {
     // Map the file offset into a SourceMap offset
     let offset = map_offset(&compilation.source_map, source_name, offset);
-    let package = &compilation.package;
-    let std_package = &compilation
-        .package_store
-        .get(compilation.std_package_id)
-        .expect("expected to find std package")
-        .package;
 
     let source = compilation
         .source_map
@@ -59,81 +55,129 @@ pub(crate) fn get_completions(
         .expect("source not found");
     let truncated_source = &source.contents[..offset as usize];
 
-    // // Collect namespaces
-    // let mut namespace_collector = NamespaceCollector {
-    //     namespaces: HashSet::new(),
-    // };
-    // namespace_collector.visit_package(package);
-    // namespace_collector.visit_package(std_package);
-
-    // // All namespaces
-    // let mut namespaces = namespace_collector
-    //     .namespaces
-    //     .drain()
-    //     .map(|ns| CompletionItem {
-    //         label: ns,
-    //         kind: CompletionItemKind::Module,
-    //     })
-    //     .collect::<Vec<_>>();
-
-    // // Determine context for the offset
-    // let mut context_builder = ContextFinder {
-    //     offset,
-    //     context: if compilation.package.items.values().next().is_none() {
-    //         Context::NoCompilation
-    //     } else {
-    //         Context::TopLevel
-    //     },
-    // };
-    // context_builder.visit_package(package);
-    // let context = context_builder.context;
-
     let mut items = Vec::new();
-    // match context {
-    //     Context::Namespace => {
-    //         items.push(CompletionItem {
-    //             label: "open".to_string(),
-    //             kind: CompletionItemKind::Keyword,
-    //         });
-    //         items.append(&mut namespaces);
-    //     }
-    //     Context::Block | Context::NoCompilation => {
-    //         // Add everything we know of.
-    //         // All callables from std package
-    //         items.append(&mut callable_names_from_package(std_package));
-    //         // Callables from the current document
-    //         items.append(&mut callable_names_from_package(package));
-    //         items.append(&mut namespaces);
-    //     }
-    //     Context::TopLevel | Context::NotSignificant => items.push(CompletionItem {
-    //         label: "namespace".to_string(),
-    //         kind: CompletionItemKind::Keyword,
-    //     }),
-    // }
 
-    for item in qsc_utils::whats_next(truncated_source) {
-        if item == "IDENTIFIER_" {
-            for name in gather_names(
+    for completion_constraint in qsc_utils::whats_next(truncated_source) {
+        add_completions(completion_constraint, compilation, offset, &mut items);
+    }
+
+    CompletionList { items }
+}
+
+#[allow(clippy::too_many_lines)]
+fn add_completions(
+    constraint: qsc::CompletionConstraint,
+    compilation: &Compilation,
+    offset: u32,
+    items: &mut Vec<CompletionItem>,
+) {
+    match constraint {
+        qsc::CompletionConstraint::Path => {
+            let (names, namespaces) = gather_names(
                 &compilation.package_store,
                 &[compilation.std_package_id],
                 &compilation.ast_package,
                 offset,
-            ) {
+                &GatherOptions::NamespacesAndTerms,
+            );
+            for name in names {
                 items.push(CompletionItem {
                     label: name.to_string(),
                     kind: CompletionItemKind::Function,
                 });
             }
-        } else {
-            // only other kind is a keyword
+            for namespace in namespaces {
+                items.push(CompletionItem {
+                    label: namespace.to_string(),
+                    kind: CompletionItemKind::Module,
+                });
+            }
+        }
+        qsc::CompletionConstraint::Ty => {
+            let (names, namespaces) = gather_names(
+                &compilation.package_store,
+                &[compilation.std_package_id],
+                &compilation.ast_package,
+                offset,
+                &GatherOptions::NamespacesAndTypes,
+            );
+            for name in names {
+                items.push(CompletionItem {
+                    label: name.to_string(),
+                    kind: CompletionItemKind::Interface,
+                });
+            }
+            for namespace in namespaces {
+                items.push(CompletionItem {
+                    label: namespace.to_string(),
+                    kind: CompletionItemKind::Module,
+                });
+            }
+        }
+        qsc::CompletionConstraint::Namespace => {
+            let (_, namespaces) = gather_names(
+                &compilation.package_store,
+                &[compilation.std_package_id],
+                &compilation.ast_package,
+                offset,
+                &GatherOptions::NamespacesAndTypes,
+            );
+            for namespace in namespaces {
+                items.push(CompletionItem {
+                    label: namespace.to_string(),
+                    kind: CompletionItemKind::Module,
+                });
+            }
+        }
+        qsc::CompletionConstraint::Qubit => {
             items.push(CompletionItem {
-                label: item,
+                label: "Qubit".to_string(),
+                kind: CompletionItemKind::Interface,
+            });
+        }
+        qsc::CompletionConstraint::Keyword(keyword) => {
+            items.push(CompletionItem {
+                label: keyword,
                 kind: CompletionItemKind::Keyword,
             });
         }
+        qsc::CompletionConstraint::Field => {
+            items.push(CompletionItem {
+                label: "[field options]".to_string(),
+                kind: CompletionItemKind::Issue,
+            });
+        }
+        qsc::CompletionConstraint::Attr => {
+            items.push(CompletionItem {
+                label: "[attr options]".to_string(),
+                kind: CompletionItemKind::Issue,
+            });
+        }
+        qsc::CompletionConstraint::TyParam => {
+            items.push(CompletionItem {
+                label: "[typaram options]".to_string(),
+                kind: CompletionItemKind::Issue,
+            });
+        }
+        qsc::CompletionConstraint::Binding => {
+            items.push(CompletionItem {
+                label: "~BINDING".to_string(),
+                kind: CompletionItemKind::Issue,
+            });
+        }
+        qsc::CompletionConstraint::Debug(s) => {
+            items.push(CompletionItem {
+                label: format!("~~DEBUG {s}"),
+                kind: CompletionItemKind::Issue,
+            });
+        }
+        qsc::CompletionConstraint::Other(t) => {
+            items.push(CompletionItem {
+                label: format!("~TOKEN {t}"),
+                kind: CompletionItemKind::Issue,
+            });
+        }
     }
-
-    CompletionList { items }
 }
 
 struct NamespaceCollector {

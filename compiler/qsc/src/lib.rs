@@ -20,8 +20,9 @@ pub mod typeck {
 }
 
 pub use qsc_frontend::compile::{
-    gather_names, whats_next, PackageStore, SourceContents, SourceMap, SourceName,
+    gather_names, whats_next, GatherOptions, PackageStore, SourceContents, SourceMap, SourceName,
 };
+pub use qsc_frontend::CompletionConstraint;
 
 pub mod hir {
     pub use qsc_hir::{hir::*, *};

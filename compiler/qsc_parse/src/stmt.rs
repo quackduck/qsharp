@@ -18,7 +18,7 @@ use crate::{
     ErrorKind,
 };
 use qsc_ast::ast::{
-    Block, Mutability, NodeId, QubitInit, QubitInitKind, QubitSource, Stmt, StmtKind,
+    Block, IdentKind, Mutability, NodeId, QubitInit, QubitInitKind, QubitSource, Stmt, StmtKind,
 };
 use qsc_data_structures::span::Span;
 
@@ -121,7 +121,7 @@ fn parse_qubit(s: &mut Scanner) -> Result<Box<StmtKind>> {
 
 fn parse_qubit_init(s: &mut Scanner) -> Result<Box<QubitInit>> {
     let lo = s.peek().span.lo;
-    let kind = if let Ok(name) = ident(s) {
+    let kind = if let Ok(name) = ident(IdentKind::Qubit, s) {
         if name.name.as_ref() != "Qubit" {
             return Err(Error(ErrorKind::Convert(
                 "qubit initializer",

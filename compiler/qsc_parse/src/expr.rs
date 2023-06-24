@@ -20,8 +20,8 @@ use crate::{
 use num_bigint::BigInt;
 use num_traits::Num;
 use qsc_ast::ast::{
-    self, BinOp, CallableKind, Expr, ExprKind, Functor, Lit, NodeId, Pat, PatKind, Pauli,
-    StringComponent, TernOp, UnOp,
+    self, BinOp, CallableKind, Expr, ExprKind, Functor, IdentKind, Lit, NodeId, Pat, PatKind,
+    Pauli, StringComponent, TernOp, UnOp,
 };
 use qsc_data_structures::span::Span;
 use std::{num::Wrapping, result, str::FromStr};
@@ -198,7 +198,7 @@ fn expr_base(s: &mut Scanner) -> Result<Box<Expr>> {
         Ok(Box::new(ExprKind::Block(b)))
     } else if let Some(l) = lit(s)? {
         Ok(Box::new(ExprKind::Lit(Box::new(l))))
-    } else if let Some(p) = opt(s, path)? {
+    } else if let Some(p) = opt(s, |s| path(IdentKind::Path, s))? {
         Ok(Box::new(ExprKind::Path(p)))
     } else {
         Err(Error(ErrorKind::Rule(
@@ -349,14 +349,14 @@ fn expr_interpolate(s: &mut Scanner) -> Result<Vec<StringComponent>> {
 fn lit(s: &mut Scanner) -> Result<Option<Lit>> {
     let lexeme = s.read();
 
-    s.peek_expectantly(TokenKind::Keyword(Keyword::True));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::Zero));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::One));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliZ));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::False));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliX));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliI));
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliY));
+    s.peek_expectantly(TokenKind::Keyword(Keyword::True), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::Zero), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::One), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliZ), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::False), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliX), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliI), None);
+    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliY), None);
 
     let token = s.peek();
     match lit_token(lexeme, token) {
@@ -612,7 +612,7 @@ fn lambda_op(s: &mut Scanner, input: Expr, kind: CallableKind) -> Result<Box<Exp
 }
 
 fn field_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {
-    Ok(Box::new(ExprKind::Field(lhs, ident(s)?)))
+    Ok(Box::new(ExprKind::Field(lhs, ident(IdentKind::Field, s)?)))
 }
 
 fn index_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {

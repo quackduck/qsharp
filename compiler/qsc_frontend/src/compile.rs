@@ -30,7 +30,8 @@ use qsc_hir::{
     validate::Validator as HirValidator,
     visit::Visitor as _,
 };
-use std::{fmt::Debug, sync::Arc};
+use qsc_parse::CompletionConstraint;
+use std::{collections::HashSet, fmt::Debug, rc::Rc, sync::Arc};
 use thiserror::Error;
 
 #[allow(clippy::module_name_repetitions)]
@@ -360,8 +361,14 @@ pub fn std(store: &PackageStore) -> CompileUnit {
 }
 
 #[must_use]
-pub fn whats_next(truncated_source: &str) -> Vec<String> {
+pub fn whats_next(truncated_source: &str) -> Vec<CompletionConstraint> {
     qsc_parse::whats_next(truncated_source)
+}
+
+pub enum GatherOptions {
+    NamespacesAndTerms,
+    NamespacesAndTypes,
+    Namespaces,
 }
 
 #[must_use]
@@ -370,7 +377,8 @@ pub fn gather_names(
     dependencies: &[PackageId],
     package: &ast::Package,
     offset: u32,
-) -> Vec<String> {
+    gather_options: &GatherOptions,
+) -> (HashSet<Rc<str>>, HashSet<Rc<str>>) {
     let mut assigner = HirAssigner::new();
 
     let mut globals = resolve::GlobalTable::new();
@@ -385,20 +393,18 @@ pub fn gather_names(
         globals.add_external_package(id, &unit.package);
     }
 
-    let mut errors = globals.add_local_package(&mut assigner, package);
+    let _ = globals.add_local_package(&mut assigner, package);
     let mut resolver = Resolver::new(globals);
 
-    let mut visitor = resolver.with_finder_mode(&mut assigner, offset);
+    let mut visitor = match gather_options {
+        GatherOptions::NamespacesAndTerms => resolver.with_term_finder(&mut assigner, offset),
+        GatherOptions::NamespacesAndTypes => resolver.with_type_finder(&mut assigner, offset),
+        GatherOptions::Namespaces => resolver.with_namespace_finder(&mut assigner, offset),
+    };
 
     visitor.visit_package(package);
 
-    let result = &visitor.finder_mode.expect("we have to be in finder mode");
-    let (_, terms, tys) = result;
-
-    let mut names = Vec::new();
-    names.extend(terms.iter().map(std::string::ToString::to_string));
-    names.extend(tys.iter().map(std::string::ToString::to_string));
-    names
+    visitor.find_results()
 }
 
 fn parse_all(sources: &SourceMap) -> (ast::Package, Vec<qsc_parse::Error>) {

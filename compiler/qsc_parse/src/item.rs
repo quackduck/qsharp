@@ -20,8 +20,8 @@ use crate::{
     ErrorKind,
 };
 use qsc_ast::ast::{
-    Attr, Block, CallableBody, CallableDecl, CallableKind, Ident, Item, ItemKind, Namespace,
-    NodeId, Path, Spec, SpecBody, SpecDecl, SpecGen, Stmt, Ty, TyDef, TyDefKind, TyKind,
+    Attr, Block, CallableBody, CallableDecl, CallableKind, Ident, IdentKind, Item, ItemKind,
+    Namespace, NodeId, Path, Spec, SpecBody, SpecDecl, SpecGen, Stmt, Ty, TyDef, TyDefKind, TyKind,
     Visibility, VisibilityKind,
 };
 use qsc_data_structures::span::Span;
@@ -109,7 +109,7 @@ fn parse_namespace(s: &mut Scanner) -> Result<Namespace> {
     let lo = s.peek().span.lo;
     let doc = parse_doc(s);
     token(s, TokenKind::Keyword(Keyword::Namespace))?;
-    let name = dot_ident(s)?;
+    let name = dot_ident(IdentKind::NamespaceDecl, s)?;
     token(s, TokenKind::Open(Delim::Brace))?;
     let items = barrier(s, &[TokenKind::Close(Delim::Brace)], parse_many)?;
     recovering_token(s, TokenKind::Close(Delim::Brace))?;
@@ -141,7 +141,7 @@ fn parse_doc(s: &mut Scanner) -> String {
 fn parse_attr(s: &mut Scanner) -> Result<Box<Attr>> {
     let lo = s.peek().span.lo;
     token(s, TokenKind::At)?;
-    let name = ident(s)?;
+    let name = ident(IdentKind::Attr, s)?;
     let arg = expr(s)?;
     Ok(Box::new(Attr {
         id: NodeId::default(),
@@ -163,9 +163,9 @@ fn parse_visibility(s: &mut Scanner) -> Result<Visibility> {
 
 fn parse_open(s: &mut Scanner) -> Result<Box<ItemKind>> {
     token(s, TokenKind::Keyword(Keyword::Open))?;
-    let name = dot_ident(s)?;
+    let name = dot_ident(IdentKind::NamespaceUsage, s)?;
     let alias = if token(s, TokenKind::Keyword(Keyword::As)).is_ok() {
-        Some(dot_ident(s)?)
+        Some(dot_ident(IdentKind::NamespaceAlias, s)?)
     } else {
         None
     };
@@ -175,7 +175,7 @@ fn parse_open(s: &mut Scanner) -> Result<Box<ItemKind>> {
 
 fn parse_newtype(s: &mut Scanner) -> Result<Box<ItemKind>> {
     token(s, TokenKind::Keyword(Keyword::Newtype))?;
-    let name = ident(s)?;
+    let name = ident(IdentKind::NewTypeName, s)?;
     token(s, TokenKind::Eq)?;
     let def = parse_ty_def(s)?;
     token(s, TokenKind::Semi)?;
@@ -237,9 +237,9 @@ fn parse_callable_decl(s: &mut Scanner) -> Result<Box<CallableDecl>> {
         )));
     };
 
-    let name = ident(s)?;
+    let name = ident(IdentKind::CallableName, s)?;
     let generics = if token(s, TokenKind::Lt).is_ok() {
-        let params = seq(s, ty::param)?.0;
+        let params = seq(s, |s| ty::param(IdentKind::TyParam, s))?.0;
         token(s, TokenKind::Gt)?;
         params
     } else {

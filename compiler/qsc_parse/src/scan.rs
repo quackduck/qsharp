@@ -6,6 +6,7 @@ use crate::{
     lex::{Lexer, Token, TokenKind},
     ErrorKind,
 };
+use qsc_ast::ast::IdentKind;
 use qsc_data_structures::span::Span;
 
 #[derive(Debug)]
@@ -19,7 +20,7 @@ pub(super) struct Scanner<'a> {
     peek: Token,
     offset: u32,
     exhausted: bool,
-    pub last_expected: Vec<(u32, TokenKind)>,
+    pub last_expected: Vec<(u32, TokenKind, Option<IdentKind>)>,
 }
 
 impl<'a> Scanner<'a> {
@@ -41,9 +42,14 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub(super) fn peek_expectantly(&mut self, expect_token: TokenKind) -> bool {
+    pub(super) fn peek_expectantly(
+        &mut self,
+        expect_token: TokenKind,
+        expected_ident_kind: Option<IdentKind>,
+    ) -> bool {
         if !self.exhausted {
-            self.last_expected.push((self.offset, expect_token));
+            self.last_expected
+                .push((self.offset, expect_token, expected_ident_kind));
         }
         self.peek.kind == expect_token
     }

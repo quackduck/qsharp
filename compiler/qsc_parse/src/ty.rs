@@ -15,7 +15,8 @@ use crate::{
     ErrorKind,
 };
 use qsc_ast::ast::{
-    CallableKind, Functor, FunctorExpr, FunctorExprKind, Ident, NodeId, SetOp, Ty, TyKind,
+    CallableKind, Functor, FunctorExpr, FunctorExprKind, Ident, IdentKind, NodeId, SetOp, Ty,
+    TyKind,
 };
 
 pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
@@ -52,9 +53,9 @@ pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
     }
 }
 
-pub(super) fn param(s: &mut Scanner) -> Result<Box<Ident>> {
+pub(super) fn param(presumed_kind: IdentKind, s: &mut Scanner) -> Result<Box<Ident>> {
     token(s, TokenKind::Apos)?;
-    ident(s)
+    ident(presumed_kind, s)
 }
 
 fn array(s: &mut Scanner) -> Result<()> {
@@ -81,9 +82,9 @@ fn base(s: &mut Scanner) -> Result<Ty> {
     let lo = s.peek().span.lo;
     let kind = if token(s, TokenKind::Keyword(Keyword::Underscore)).is_ok() {
         Ok(TyKind::Hole)
-    } else if let Some(name) = opt(s, param)? {
+    } else if let Some(name) = opt(s, |s| param(IdentKind::TyArg, s))? {
         Ok(TyKind::Param(name))
-    } else if let Some(path) = opt(s, path)? {
+    } else if let Some(path) = opt(s, |s| path(IdentKind::Ty, s))? {
         Ok(TyKind::Path(path))
     } else if token(s, TokenKind::Open(Delim::Paren)).is_ok() {
         let (tys, final_sep) = seq(s, ty)?;

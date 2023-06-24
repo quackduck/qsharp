@@ -10,27 +10,40 @@ use crate::{
     Error, ErrorKind,
 };
 use expect_test::expect;
+use qsc_ast::ast::IdentKind;
 use qsc_data_structures::span::Span;
 
 #[test]
 fn ident_basic() {
-    check(ident, "foo", &expect![[r#"Ident _id_ [0-3] "foo""#]]);
+    check(
+        |s| ident(IdentKind::Test, s),
+        "foo",
+        &expect![[r#"Ident _id_ [0-3] "foo""#]],
+    );
 }
 
 #[test]
 fn ident_num_suffix() {
-    check(ident, "foo2", &expect![[r#"Ident _id_ [0-4] "foo2""#]]);
+    check(
+        |s| ident(IdentKind::Test, s),
+        "foo2",
+        &expect![[r#"Ident _id_ [0-4] "foo2""#]],
+    );
 }
 
 #[test]
 fn ident_underscore_prefix() {
-    check(ident, "_foo", &expect![[r#"Ident _id_ [0-4] "_foo""#]]);
+    check(
+        |s| ident(IdentKind::Test, s),
+        "_foo",
+        &expect![[r#"Ident _id_ [0-4] "_foo""#]],
+    );
 }
 
 #[test]
 fn ident_num_prefix() {
     check(
-        ident,
+        |s| ident(IdentKind::Test, s),
         "2foo",
         &expect![[r#"
             Error(
@@ -53,7 +66,7 @@ fn ident_num_prefix() {
 fn ident_keyword() {
     for keyword in enum_iterator::all::<Keyword>() {
         let mut scanner = Scanner::new(keyword.as_str());
-        let actual = ident(&mut scanner);
+        let actual = ident(IdentKind::Test, &mut scanner);
         let span = Span {
             lo: 0,
             hi: keyword
@@ -80,7 +93,7 @@ fn ident_keyword() {
 #[test]
 fn path_single() {
     check(
-        path,
+        |s| path(IdentKind::Test, s),
         "Foo",
         &expect![[r#"Path _id_ [0-3] (Ident _id_ [0-3] "Foo")"#]],
     );
@@ -89,7 +102,7 @@ fn path_single() {
 #[test]
 fn path_double() {
     check(
-        path,
+        |s| path(IdentKind::Test, s),
         "Foo.Bar",
         &expect![[r#"Path _id_ [0-7] (Ident _id_ [0-3] "Foo") (Ident _id_ [4-7] "Bar")"#]],
     );
@@ -98,7 +111,7 @@ fn path_double() {
 #[test]
 fn path_triple() {
     check(
-        path,
+        |s| path(IdentKind::Test, s),
         "Foo.Bar.Baz",
         &expect![[r#"Path _id_ [0-11] (Ident _id_ [0-7] "Foo.Bar") (Ident _id_ [8-11] "Baz")"#]],
     );
@@ -107,7 +120,7 @@ fn path_triple() {
 #[test]
 fn path_trailing_dot() {
     check(
-        path,
+        |s| path(IdentKind::Test, s),
         "Foo.Bar.",
         &expect![[r#"
             Error(
@@ -258,7 +271,7 @@ fn pat_missing_ty() {
 #[test]
 fn opt_succeed() {
     check_opt(
-        |s| opt(s, path),
+        |s| opt(s, |s| path(IdentKind::Test, s)),
         "Foo.Bar",
         &expect![[r#"Path _id_ [0-7] (Ident _id_ [0-3] "Foo") (Ident _id_ [4-7] "Bar")"#]],
     );
@@ -266,13 +279,17 @@ fn opt_succeed() {
 
 #[test]
 fn opt_fail_no_consume() {
-    check_opt(|s| opt(s, path), "123", &expect!["None"]);
+    check_opt(
+        |s| opt(s, |s| path(IdentKind::Test, s)),
+        "123",
+        &expect!["None"],
+    );
 }
 
 #[test]
 fn opt_fail_consume() {
     check_opt(
-        |s| opt(s, path),
+        |s| opt(s, |s| path(IdentKind::Test, s)),
         "Foo.#",
         &expect![[r#"
             Error(
@@ -304,13 +321,17 @@ fn opt_fail_consume() {
 
 #[test]
 fn seq_empty() {
-    check_seq(|s| seq(s, ident), "", &expect!["(, Missing)"]);
+    check_seq(
+        |s| seq(s, |s| ident(IdentKind::Test, s)),
+        "",
+        &expect!["(, Missing)"],
+    );
 }
 
 #[test]
 fn seq_single() {
     check_seq(
-        |s| seq(s, ident),
+        |s| seq(s, |s| ident(IdentKind::Test, s)),
         "foo",
         &expect![[r#"(Ident _id_ [0-3] "foo", Missing)"#]],
     );
@@ -319,7 +340,7 @@ fn seq_single() {
 #[test]
 fn seq_double() {
     check_seq(
-        |s| seq(s, ident),
+        |s| seq(s, |s| ident(IdentKind::Test, s)),
         "foo, bar",
         &expect![[r#"
             (Ident _id_ [0-3] "foo",
@@ -330,7 +351,7 @@ fn seq_double() {
 #[test]
 fn seq_trailing() {
     check_seq(
-        |s| seq(s, ident),
+        |s| seq(s, |s| ident(IdentKind::Test, s)),
         "foo, bar,",
         &expect![[r#"
             (Ident _id_ [0-3] "foo",
@@ -341,7 +362,7 @@ fn seq_trailing() {
 #[test]
 fn seq_fail_no_consume() {
     check_seq(
-        |s| seq(s, ident),
+        |s| seq(s, |s| ident(IdentKind::Test, s)),
         "foo, 2",
         &expect![[r#"(Ident _id_ [0-3] "foo", Present)"#]],
     );
@@ -350,7 +371,7 @@ fn seq_fail_no_consume() {
 #[test]
 fn seq_fail_consume() {
     check_seq(
-        |s| seq(s, path),
+        |s| seq(s, |s| path(IdentKind::Test, s)),
         "foo, bar.",
         &expect![[r#"
             Error(

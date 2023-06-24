@@ -9,7 +9,7 @@ use crate::{
     lex::{Delim, TokenKind},
     ErrorKind,
 };
-use qsc_ast::ast::{Ident, NodeId, Pat, PatKind, Path};
+use qsc_ast::ast::{Ident, IdentKind, NodeId, Pat, PatKind, Path};
 use qsc_data_structures::span::Span;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,7 +34,7 @@ impl FinalSep {
 }
 
 pub(super) fn token(s: &mut Scanner, t: TokenKind) -> Result<()> {
-    if s.peek_expectantly(t) {
+    if s.peek_expectantly(t, None) {
         s.advance();
         Ok(())
     } else {
@@ -42,9 +42,9 @@ pub(super) fn token(s: &mut Scanner, t: TokenKind) -> Result<()> {
     }
 }
 
-pub(super) fn ident(s: &mut Scanner) -> Result<Box<Ident>> {
+pub(super) fn ident(presumed_kind: IdentKind, s: &mut Scanner) -> Result<Box<Ident>> {
     let peek = s.peek();
-    if s.peek_expectantly(TokenKind::Ident) {
+    if s.peek_expectantly(TokenKind::Ident, Some(presumed_kind)) {
         let name = s.read().into();
         s.advance();
         Ok(Box::new(Ident {
@@ -57,8 +57,8 @@ pub(super) fn ident(s: &mut Scanner) -> Result<Box<Ident>> {
     }
 }
 
-pub(super) fn dot_ident(s: &mut Scanner) -> Result<Box<Ident>> {
-    let p = path(s)?;
+pub(super) fn dot_ident(presumed_kind: IdentKind, s: &mut Scanner) -> Result<Box<Ident>> {
+    let p = path(presumed_kind, s)?;
     let mut name = String::new();
     if let Some(namespace) = p.namespace {
         name.push_str(&namespace.name);
@@ -73,11 +73,11 @@ pub(super) fn dot_ident(s: &mut Scanner) -> Result<Box<Ident>> {
     }))
 }
 
-pub(super) fn path(s: &mut Scanner) -> Result<Box<Path>> {
+pub(super) fn path(presumed_kind: IdentKind, s: &mut Scanner) -> Result<Box<Path>> {
     let lo = s.peek().span.lo;
-    let mut parts = vec![ident(s)?];
+    let mut parts = vec![ident(presumed_kind, s)?];
     while token(s, TokenKind::Dot).is_ok() {
-        parts.push(ident(s)?);
+        parts.push(ident(presumed_kind, s)?);
     }
 
     let name = parts.pop().expect("path should have at least one part");
@@ -118,7 +118,7 @@ pub(super) fn pat(s: &mut Scanner) -> Result<Box<Pat>> {
         token(s, TokenKind::Close(Delim::Paren))?;
         Ok(final_sep.reify(pats, PatKind::Paren, PatKind::Tuple))
     } else {
-        let name = ident(s).map_err(|e| map_rule_name("pattern", e))?;
+        let name = ident(IdentKind::Binding, s).map_err(|e| map_rule_name("pattern", e))?;
         let ty = if token(s, TokenKind::Colon).is_ok() {
             Some(Box::new(ty(s)?))
         } else {

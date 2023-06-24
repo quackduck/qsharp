@@ -198,13 +198,51 @@ impl Resolver {
         }
     }
 
-    pub(super) fn with_finder_mode<'a>(
+    pub(super) fn with_term_finder<'a>(
         &'a mut self,
         assigner: &'a mut Assigner,
         offset: u32,
     ) -> With<'a> {
         With {
-            finder_mode: Some((offset, HashSet::new(), HashSet::new())),
+            finder_mode: Some(FindContext {
+                offset,
+                kind: Some(NameKind::Term),
+                results: HashSet::new(),
+            }),
+            resolver: self,
+            assigner,
+            in_block: false,
+        }
+    }
+
+    pub(super) fn with_type_finder<'a>(
+        &'a mut self,
+        assigner: &'a mut Assigner,
+        offset: u32,
+    ) -> With<'a> {
+        With {
+            finder_mode: Some(FindContext {
+                offset,
+                kind: Some(NameKind::Ty),
+                results: HashSet::new(),
+            }),
+            resolver: self,
+            assigner,
+            in_block: false,
+        }
+    }
+
+    pub(super) fn with_namespace_finder<'a>(
+        &'a mut self,
+        assigner: &'a mut Assigner,
+        offset: u32,
+    ) -> With<'a> {
+        With {
+            finder_mode: Some(FindContext {
+                offset,
+                kind: None,
+                results: HashSet::new(),
+            }),
             resolver: self,
             assigner,
             in_block: false,
@@ -293,8 +331,14 @@ impl Resolver {
     }
 }
 
+pub(super) struct FindContext {
+    offset: u32,
+    kind: Option<NameKind>,
+    pub results: HashSet<Rc<str>>,
+}
+
 pub(super) struct With<'a> {
-    pub finder_mode: Option<(u32, HashSet<Rc<str>>, HashSet<Rc<str>>)>,
+    pub finder_mode: Option<FindContext>,
     resolver: &'a mut Resolver,
     assigner: &'a mut Assigner,
     in_block: bool,
@@ -306,28 +350,22 @@ impl With<'_> {
         f(self);
 
         if let Some(filter) = &mut self.finder_mode {
-            let (offset, ref mut term_set, ref mut ty_set) = filter;
-            if span.lo <= *offset && span.hi > *offset {
-                // Of course we're going do to this and
-                // throw the result away a bunch of times
-                // if we're in nested scopes
-                let terms = gather_names(
-                    NameKind::Term,
-                    &self.resolver.globals,
-                    &self.resolver.scopes,
-                    &None, // TODO: need to try with namespaces for path
-                );
-                term_set.clear();
-                term_set.extend(terms);
+            if let Some(kind) = filter.kind {
+                if span.lo <= filter.offset && span.hi > filter.offset {
+                    // Of course we're going do to this and
+                    // throw the result away a bunch of times
+                    // if we're in nested scopes
 
-                let tys = gather_names(
-                    NameKind::Ty,
-                    &self.resolver.globals,
-                    &self.resolver.scopes,
-                    &None, // TODO: need to try with namespaces for path
-                );
-                ty_set.clear();
-                ty_set.extend(tys);
+                    // TODO: Not getting locals here, hmm
+                    let terms = gather_names(
+                        kind,
+                        &self.resolver.globals,
+                        &self.resolver.scopes,
+                        &None, // TODO: need to try with namespaces for path
+                    );
+                    filter.results.clear();
+                    filter.results.extend(terms);
+                }
             }
         }
 
@@ -335,6 +373,18 @@ impl With<'_> {
             .scopes
             .pop()
             .expect("pushed scope should be the last element on the stack");
+    }
+
+    pub fn find_results(&self) -> (HashSet<Rc<str>>, HashSet<Rc<str>>) {
+        // names and namespaces
+        (
+            self.finder_mode
+                .as_ref()
+                .expect("don't call find_results if you're not in finder mode")
+                .results
+                .clone(),
+            self.resolver.globals.namespaces.clone(),
+        )
     }
 
     fn with_pat(&mut self, span: Span, kind: ScopeKind, pat: &ast::Pat, f: impl FnOnce(&mut Self)) {
