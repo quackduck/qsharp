@@ -7,14 +7,17 @@ mod tests;
 use crate::{
     lower::{self, Lowerer},
     resolve::{self, Names, Resolver},
-    typeck::{self, Checker},
+    typeck::{self, Checker, Table},
 };
 use miette::{
     Diagnostic, MietteError, MietteSpanContents, Report, SourceCode, SourceSpan, SpanContents,
 };
 use qsc_ast::{
-    assigner::Assigner as AstAssigner, ast, mut_visit::MutVisitor,
-    validate::Validator as AstValidator, visit::Visitor as _,
+    assigner::Assigner as AstAssigner,
+    ast::{self},
+    mut_visit::MutVisitor,
+    validate::Validator as AstValidator,
+    visit::Visitor as _,
 };
 use qsc_data_structures::{
     index_map::{self, IndexMap},
@@ -34,6 +37,9 @@ use thiserror::Error;
 #[derive(Debug, Default)]
 pub struct CompileUnit {
     pub package: hir::Package,
+    pub ast_package: ast::Package,
+    pub names: Names,
+    pub tys: Table,
     pub assigner: HirAssigner,
     pub sources: SourceMap,
     pub errors: Vec<Error>,
@@ -220,18 +226,18 @@ pub fn compile(
     dependencies: &[PackageId],
     sources: SourceMap,
 ) -> CompileUnit {
-    let (mut package, parse_errors) = parse_all(&sources);
+    let (mut ast_package, parse_errors) = parse_all(&sources);
     let mut ast_assigner = AstAssigner::new();
-    ast_assigner.visit_package(&mut package);
-    AstValidator::default().visit_package(&package);
+    ast_assigner.visit_package(&mut ast_package);
+    AstValidator::default().visit_package(&ast_package);
 
     let mut hir_assigner = HirAssigner::new();
-    let (names, name_errors) = resolve_all(store, dependencies, &mut hir_assigner, &package);
-    let (tys, ty_errors) = typeck_all(store, dependencies, &package, &names);
+    let (names, name_errors) = resolve_all(store, dependencies, &mut hir_assigner, &ast_package);
+    let (tys, ty_errors) = typeck_all(store, dependencies, &ast_package, &names);
     let mut lowerer = Lowerer::new();
     let package = lowerer
         .with(&mut hir_assigner, &names, &tys)
-        .lower_package(&package);
+        .lower_package(&ast_package);
     HirValidator::default().visit_package(&package);
     let lower_errors = lowerer.drain_errors();
 
@@ -246,6 +252,9 @@ pub fn compile(
 
     CompileUnit {
         package,
+        ast_package,
+        names,
+        tys,
         assigner: hir_assigner,
         sources,
         errors,
