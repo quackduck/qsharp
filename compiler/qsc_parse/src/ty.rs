@@ -12,11 +12,11 @@ use super::{
 };
 use crate::{
     lex::{ClosedBinOp, Delim, TokenKind},
-    ErrorKind,
+    prim::keyword,
+    CompletionConstraint, ErrorKind,
 };
 use qsc_ast::ast::{
-    CallableKind, Functor, FunctorExpr, FunctorExprKind, Ident, IdentKind, NodeId, SetOp, Ty,
-    TyKind,
+    CallableKind, Functor, FunctorExpr, FunctorExprKind, Ident, NodeId, SetOp, Ty, TyKind,
 };
 
 pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
@@ -31,7 +31,7 @@ pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
             }
         } else if let Some(kind) = opt(s, arrow)? {
             let output = ty(s)?;
-            let functors = if token(s, TokenKind::Keyword(Keyword::Is)).is_ok() {
+            let functors = if keyword(s, Keyword::Is).is_ok() {
                 Some(Box::new(functor_expr(s)?))
             } else {
                 None
@@ -53,9 +53,9 @@ pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
     }
 }
 
-pub(super) fn param(presumed_kind: IdentKind, s: &mut Scanner) -> Result<Box<Ident>> {
+pub(super) fn param(s: &mut Scanner) -> Result<Box<Ident>> {
     token(s, TokenKind::Apos)?;
-    ident(presumed_kind, s)
+    ident(s)
 }
 
 fn array(s: &mut Scanner) -> Result<()> {
@@ -80,11 +80,17 @@ fn arrow(s: &mut Scanner) -> Result<CallableKind> {
 
 fn base(s: &mut Scanner) -> Result<Ty> {
     let lo = s.peek().span.lo;
-    let kind = if token(s, TokenKind::Keyword(Keyword::Underscore)).is_ok() {
+    let kind = if keyword(s, Keyword::Underscore).is_ok() {
         Ok(TyKind::Hole)
-    } else if let Some(name) = opt(s, |s| param(IdentKind::TyArg, s))? {
+    } else if let Some(name) = {
+        s.push_expectation(CompletionConstraint::TyParam);
+        opt(s, param)?
+    } {
         Ok(TyKind::Param(name))
-    } else if let Some(path) = opt(s, |s| path(IdentKind::Ty, s))? {
+    } else if let Some(path) = {
+        s.push_expectation(CompletionConstraint::Ty);
+        opt(s, path)?
+    } {
         Ok(TyKind::Path(path))
     } else if token(s, TokenKind::Open(Delim::Paren)).is_ok() {
         let (tys, final_sep) = seq(s, ty)?;
@@ -114,9 +120,9 @@ fn functor_base(s: &mut Scanner) -> Result<FunctorExpr> {
         let e = functor_expr(s)?;
         token(s, TokenKind::Close(Delim::Paren))?;
         Ok(FunctorExprKind::Paren(Box::new(e)))
-    } else if token(s, TokenKind::Keyword(Keyword::Adj)).is_ok() {
+    } else if keyword(s, Keyword::Adj).is_ok() {
         Ok(FunctorExprKind::Lit(Functor::Adj))
-    } else if token(s, TokenKind::Keyword(Keyword::Ctl)).is_ok() {
+    } else if keyword(s, Keyword::Ctl).is_ok() {
         Ok(FunctorExprKind::Lit(Functor::Ctl))
     } else {
         Err(Error(ErrorKind::Rule(

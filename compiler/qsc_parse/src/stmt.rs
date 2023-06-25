@@ -14,11 +14,11 @@ use super::{
 };
 use crate::{
     lex::{Delim, TokenKind},
-    prim::{barrier, recovering, recovering_token},
+    prim::{barrier, keyword, recovering, recovering_token},
     ErrorKind,
 };
 use qsc_ast::ast::{
-    Block, IdentKind, Mutability, NodeId, QubitInit, QubitInitKind, QubitSource, Stmt, StmtKind,
+    Block, Mutability, NodeId, QubitInit, QubitInitKind, QubitSource, Stmt, StmtKind,
 };
 use qsc_data_structures::span::Span;
 
@@ -75,9 +75,9 @@ fn default(span: Span) -> Box<Stmt> {
 }
 
 fn parse_local(s: &mut Scanner) -> Result<Box<StmtKind>> {
-    let mutability = if token(s, TokenKind::Keyword(Keyword::Let)).is_ok() {
+    let mutability = if keyword(s, Keyword::Let).is_ok() {
         Mutability::Immutable
-    } else if token(s, TokenKind::Keyword(Keyword::Mutable)).is_ok() {
+    } else if keyword(s, Keyword::Mutable).is_ok() {
         Mutability::Mutable
     } else {
         let token = s.peek();
@@ -96,9 +96,9 @@ fn parse_local(s: &mut Scanner) -> Result<Box<StmtKind>> {
 }
 
 fn parse_qubit(s: &mut Scanner) -> Result<Box<StmtKind>> {
-    let source = if token(s, TokenKind::Keyword(Keyword::Use)).is_ok() {
+    let source = if keyword(s, Keyword::Use).is_ok() {
         QubitSource::Fresh
-    } else if token(s, TokenKind::Keyword(Keyword::Borrow)).is_ok() {
+    } else if keyword(s, Keyword::Borrow).is_ok() {
         QubitSource::Dirty
     } else {
         return Err(Error(ErrorKind::Rule(
@@ -121,7 +121,8 @@ fn parse_qubit(s: &mut Scanner) -> Result<Box<StmtKind>> {
 
 fn parse_qubit_init(s: &mut Scanner) -> Result<Box<QubitInit>> {
     let lo = s.peek().span.lo;
-    let kind = if let Ok(name) = ident(IdentKind::Qubit, s) {
+    s.push_expectation(crate::CompletionConstraint::Qubit);
+    let kind = if let Ok(name) = ident(s) {
         if name.name.as_ref() != "Qubit" {
             return Err(Error(ErrorKind::Convert(
                 "qubit initializer",

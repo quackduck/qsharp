@@ -4,9 +4,8 @@
 use super::Error;
 use crate::{
     lex::{Lexer, Token, TokenKind},
-    ErrorKind,
+    CompletionConstraint, ErrorKind,
 };
-use qsc_ast::ast::IdentKind;
 use qsc_data_structures::span::Span;
 
 #[derive(Debug)]
@@ -20,7 +19,7 @@ pub(super) struct Scanner<'a> {
     peek: Token,
     offset: u32,
     exhausted: bool,
-    pub last_expected: Vec<(u32, TokenKind, Option<IdentKind>)>,
+    pub last_expected: Vec<(u32, CompletionConstraint)>,
 }
 
 impl<'a> Scanner<'a> {
@@ -42,16 +41,10 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub(super) fn peek_expectantly(
-        &mut self,
-        expect_token: TokenKind,
-        expected_ident_kind: Option<IdentKind>,
-    ) -> bool {
+    pub(super) fn push_expectation(&mut self, expectation: CompletionConstraint) {
         if !self.exhausted {
-            self.last_expected
-                .push((self.offset, expect_token, expected_ident_kind));
+            self.last_expected.push((self.offset, expectation));
         }
-        self.peek.kind == expect_token
     }
 
     pub(super) fn peek(&self) -> Token {

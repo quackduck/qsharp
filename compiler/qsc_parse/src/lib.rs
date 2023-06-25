@@ -82,6 +82,7 @@ trait Parser<T>: FnMut(&mut Scanner) -> Result<T> {}
 
 impl<T, F: FnMut(&mut Scanner) -> Result<T>> Parser<T> for F {}
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum CompletionConstraint {
     Path,
     Field,
@@ -90,10 +91,9 @@ pub enum CompletionConstraint {
     Qubit,
     Ty,
     TyParam,
-    Keyword(String),
+    Keyword(String), // TODO: ahem
 
     // Keep the below around just for debugging
-    Binding,       // declaring a new name, no completion should be provided
     Debug(String), // arbitrary debug string to stick in list
     Other(String), // Some other token kind that we don't care about
 }
@@ -118,31 +118,7 @@ pub fn whats_next(input: &str) -> Vec<CompletionConstraint> {
         last_expected_tokens,
     )));
     items.push(CompletionConstraint::Debug(format!("{:?}", source_errors,)));
-    items.extend(last_expected_tokens.into_iter().map(|x| {
-        match x.1 {
-            TokenKind::Ident => match x
-                .2
-                .expect("should have an identifier kind if the token is an identifier")
-            {
-                qsc_ast::ast::IdentKind::Path => CompletionConstraint::Path,
-                qsc_ast::ast::IdentKind::Field => CompletionConstraint::Field,
-                qsc_ast::ast::IdentKind::Attr => CompletionConstraint::Attr,
-                qsc_ast::ast::IdentKind::NamespaceUsage => CompletionConstraint::Namespace,
-                qsc_ast::ast::IdentKind::Qubit => CompletionConstraint::Qubit,
-                qsc_ast::ast::IdentKind::Ty => CompletionConstraint::Ty,
-                qsc_ast::ast::IdentKind::TyArg => CompletionConstraint::TyParam,
-                qsc_ast::ast::IdentKind::CallableName
-                | qsc_ast::ast::IdentKind::NewTypeName
-                | qsc_ast::ast::IdentKind::NamespaceDecl
-                | qsc_ast::ast::IdentKind::NamespaceAlias
-                | qsc_ast::ast::IdentKind::Binding
-                | qsc_ast::ast::IdentKind::TyParam => CompletionConstraint::Binding,
-                qsc_ast::ast::IdentKind::Test => panic!("shouldn't have a test identkind"),
-            },
-            TokenKind::Keyword(keyword) => CompletionConstraint::Keyword(keyword.to_string()),
-            t => CompletionConstraint::Other(t.to_string()),
-        }
-    }));
+    items.extend(last_expected_tokens.into_iter().map(|x| x.1));
     items
 }
 

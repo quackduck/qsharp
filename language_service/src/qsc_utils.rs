@@ -16,7 +16,9 @@ pub(crate) struct Compilation {
     pub package_store: PackageStore,
     pub std_package_id: PackageId,
     pub ast_package: ast::Package,
+    #[allow(dead_code)]
     pub names: Names,
+    #[allow(dead_code)]
     pub tys: Table,
     pub package: Package,
     pub source_map: SourceMap,

@@ -1230,43 +1230,6 @@ pub struct Ident {
     pub name: Rc<str>,
 }
 
-/// Context that helps us determine what kind of
-/// identifier we expect
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub enum IdentKind {
-    /// Path usage (ExprKind::Path)
-    Path,
-    /// Field usage (ExprKind::Field)
-    Field,
-    /// Attribute usage (Attr)
-    Attr,
-    /// Namespace usage (ItemKind::Open)
-    NamespaceUsage,
-    /// Qubit (can only ever be `Qubit`) (QubitInit)
-    Qubit,
-    /// Type usage (Ty)
-    Ty,
-    /// Usage of a type argument (Ty)
-    TyArg,
-
-    // Declarations - no sense in completions
-    /// Callable declaration (CallableDecl)
-    CallableName,
-    /// `newtype` declaration (ItemKind::Ty)
-    NewTypeName,
-    /// Namespace declaration (Namespace)
-    NamespaceDecl,
-    /// Namespace alias (ItemKind::Open)
-    NamespaceAlias,
-    /// Binding (PatKind::Bind)
-    Binding,
-    /// Generic type parameter (CallableDecl)
-    TyParam,
-
-    /// Just didn't want to update the tests
-    Test,
-}
-
 impl Display for Ident {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Ident {} {} \"{}\"", self.id, self.span, self.name)

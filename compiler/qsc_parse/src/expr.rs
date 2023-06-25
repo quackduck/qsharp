@@ -13,15 +13,15 @@ use crate::{
         ClosedBinOp, Delim, InterpolatedEnding, InterpolatedStart, Radix, StringToken, Token,
         TokenKind,
     },
-    prim::{ident, opt, pat, path, seq, shorten, token},
+    prim::{ident, keyword, opt, pat, path, seq, shorten, token},
     scan::Scanner,
-    stmt, Error, ErrorKind, Result,
+    stmt, CompletionConstraint, Error, ErrorKind, Result,
 };
 use num_bigint::BigInt;
 use num_traits::Num;
 use qsc_ast::ast::{
-    self, BinOp, CallableKind, Expr, ExprKind, Functor, IdentKind, Lit, NodeId, Pat, PatKind,
-    Pauli, StringComponent, TernOp, UnOp,
+    self, BinOp, CallableKind, Expr, ExprKind, Functor, Lit, NodeId, Pat, PatKind, Pauli,
+    StringComponent, TernOp, UnOp,
 };
 use qsc_data_structures::span::Span;
 use std::{num::Wrapping, result, str::FromStr};
@@ -155,41 +155,41 @@ fn expr_base(s: &mut Scanner) -> Result<Box<Expr>> {
         )))
     } else if token(s, TokenKind::DotDotDot).is_ok() {
         expr_range_prefix(s)
-    } else if token(s, TokenKind::Keyword(Keyword::Underscore)).is_ok() {
+    } else if keyword(s, Keyword::Underscore).is_ok() {
         Ok(Box::new(ExprKind::Hole))
-    } else if token(s, TokenKind::Keyword(Keyword::Fail)).is_ok() {
+    } else if keyword(s, Keyword::Fail).is_ok() {
         Ok(Box::new(ExprKind::Fail(expr(s)?)))
-    } else if token(s, TokenKind::Keyword(Keyword::For)).is_ok() {
+    } else if keyword(s, Keyword::For).is_ok() {
         let vars = pat(s)?;
-        token(s, TokenKind::Keyword(Keyword::In))?;
+        keyword(s, Keyword::In)?;
         let iter = expr(s)?;
         let body = stmt::parse_block(s)?;
         Ok(Box::new(ExprKind::For(vars, iter, body)))
-    } else if token(s, TokenKind::Keyword(Keyword::If)).is_ok() {
+    } else if keyword(s, Keyword::If).is_ok() {
         expr_if(s)
     } else if let Some(components) = opt(s, expr_interpolate)? {
         Ok(Box::new(ExprKind::Interpolate(
             components.into_boxed_slice(),
         )))
-    } else if token(s, TokenKind::Keyword(Keyword::Repeat)).is_ok() {
+    } else if keyword(s, Keyword::Repeat).is_ok() {
         let body = stmt::parse_block(s)?;
-        token(s, TokenKind::Keyword(Keyword::Until))?;
+        keyword(s, Keyword::Until)?;
         let cond = expr(s)?;
-        let fixup = if token(s, TokenKind::Keyword(Keyword::Fixup)).is_ok() {
+        let fixup = if keyword(s, Keyword::Fixup).is_ok() {
             Some(stmt::parse_block(s)?)
         } else {
             None
         };
         Ok(Box::new(ExprKind::Repeat(body, cond, fixup)))
-    } else if token(s, TokenKind::Keyword(Keyword::Return)).is_ok() {
+    } else if keyword(s, Keyword::Return).is_ok() {
         Ok(Box::new(ExprKind::Return(expr(s)?)))
-    } else if token(s, TokenKind::Keyword(Keyword::Set)).is_ok() {
+    } else if keyword(s, Keyword::Set).is_ok() {
         expr_set(s)
-    } else if token(s, TokenKind::Keyword(Keyword::While)).is_ok() {
+    } else if keyword(s, Keyword::While).is_ok() {
         Ok(Box::new(ExprKind::While(expr(s)?, stmt::parse_block(s)?)))
-    } else if token(s, TokenKind::Keyword(Keyword::Within)).is_ok() {
+    } else if keyword(s, Keyword::Within).is_ok() {
         let outer = stmt::parse_block(s)?;
-        token(s, TokenKind::Keyword(Keyword::Apply))?;
+        keyword(s, Keyword::Apply)?;
         let inner = stmt::parse_block(s)?;
         Ok(Box::new(ExprKind::Conjugate(outer, inner)))
     } else if let Some(a) = opt(s, expr_array)? {
@@ -198,7 +198,10 @@ fn expr_base(s: &mut Scanner) -> Result<Box<Expr>> {
         Ok(Box::new(ExprKind::Block(b)))
     } else if let Some(l) = lit(s)? {
         Ok(Box::new(ExprKind::Lit(Box::new(l))))
-    } else if let Some(p) = opt(s, |s| path(IdentKind::Path, s))? {
+    } else if let Some(p) = {
+        s.push_expectation(CompletionConstraint::Path);
+        opt(s, path)?
+    } {
         Ok(Box::new(ExprKind::Path(p)))
     } else {
         Err(Error(ErrorKind::Rule(
@@ -220,9 +223,9 @@ fn expr_if(s: &mut Scanner) -> Result<Box<ExprKind>> {
     let body = stmt::parse_block(s)?;
     let lo = s.peek().span.lo;
 
-    let otherwise = if token(s, TokenKind::Keyword(Keyword::Elif)).is_ok() {
+    let otherwise = if keyword(s, Keyword::Elif).is_ok() {
         Some(expr_if(s)?)
-    } else if token(s, TokenKind::Keyword(Keyword::Else)).is_ok() {
+    } else if keyword(s, Keyword::Else).is_ok() {
         Some(Box::new(ExprKind::Block(stmt::parse_block(s)?)))
     } else {
         None
@@ -349,14 +352,14 @@ fn expr_interpolate(s: &mut Scanner) -> Result<Vec<StringComponent>> {
 fn lit(s: &mut Scanner) -> Result<Option<Lit>> {
     let lexeme = s.read();
 
-    s.peek_expectantly(TokenKind::Keyword(Keyword::True), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::Zero), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::One), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliZ), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::False), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliX), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliI), None);
-    s.peek_expectantly(TokenKind::Keyword(Keyword::PauliY), None);
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::True.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::Zero.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::One.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliZ.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::False.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliX.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliI.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliY.to_string()));
 
     let token = s.peek();
     match lit_token(lexeme, token) {
@@ -612,7 +615,8 @@ fn lambda_op(s: &mut Scanner, input: Expr, kind: CallableKind) -> Result<Box<Exp
 }
 
 fn field_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {
-    Ok(Box::new(ExprKind::Field(lhs, ident(IdentKind::Field, s)?)))
+    s.push_expectation(CompletionConstraint::Field);
+    Ok(Box::new(ExprKind::Field(lhs, ident(s)?)))
 }
 
 fn index_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {

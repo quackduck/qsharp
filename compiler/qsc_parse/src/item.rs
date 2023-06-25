@@ -15,13 +15,13 @@ use super::{
 };
 use crate::{
     lex::{Delim, TokenKind},
-    prim::{barrier, recovering, recovering_token, shorten},
+    prim::{barrier, keyword, recovering, recovering_token, shorten},
     stmt::check_semis,
     ErrorKind,
 };
 use qsc_ast::ast::{
-    Attr, Block, CallableBody, CallableDecl, CallableKind, Ident, IdentKind, Item, ItemKind,
-    Namespace, NodeId, Path, Spec, SpecBody, SpecDecl, SpecGen, Stmt, Ty, TyDef, TyDefKind, TyKind,
+    Attr, Block, CallableBody, CallableDecl, CallableKind, Ident, Item, ItemKind, Namespace,
+    NodeId, Path, Spec, SpecBody, SpecDecl, SpecGen, Stmt, Ty, TyDef, TyDefKind, TyKind,
     Visibility, VisibilityKind,
 };
 use qsc_data_structures::span::Span;
@@ -108,8 +108,8 @@ fn parse_fragment(s: &mut Scanner) -> Result<Fragment> {
 fn parse_namespace(s: &mut Scanner) -> Result<Namespace> {
     let lo = s.peek().span.lo;
     let doc = parse_doc(s);
-    token(s, TokenKind::Keyword(Keyword::Namespace))?;
-    let name = dot_ident(IdentKind::NamespaceDecl, s)?;
+    keyword(s, Keyword::Namespace)?;
+    let name = dot_ident(s)?;
     token(s, TokenKind::Open(Delim::Brace))?;
     let items = barrier(s, &[TokenKind::Close(Delim::Brace)], parse_many)?;
     recovering_token(s, TokenKind::Close(Delim::Brace))?;
@@ -141,7 +141,8 @@ fn parse_doc(s: &mut Scanner) -> String {
 fn parse_attr(s: &mut Scanner) -> Result<Box<Attr>> {
     let lo = s.peek().span.lo;
     token(s, TokenKind::At)?;
-    let name = ident(IdentKind::Attr, s)?;
+    s.push_expectation(crate::CompletionConstraint::Attr);
+    let name = ident(s)?;
     let arg = expr(s)?;
     Ok(Box::new(Attr {
         id: NodeId::default(),
@@ -153,7 +154,7 @@ fn parse_attr(s: &mut Scanner) -> Result<Box<Attr>> {
 
 fn parse_visibility(s: &mut Scanner) -> Result<Visibility> {
     let lo = s.peek().span.lo;
-    token(s, TokenKind::Keyword(Keyword::Internal))?;
+    keyword(s, Keyword::Internal)?;
     Ok(Visibility {
         id: NodeId::default(),
         span: s.span(lo),
@@ -162,10 +163,11 @@ fn parse_visibility(s: &mut Scanner) -> Result<Visibility> {
 }
 
 fn parse_open(s: &mut Scanner) -> Result<Box<ItemKind>> {
-    token(s, TokenKind::Keyword(Keyword::Open))?;
-    let name = dot_ident(IdentKind::NamespaceUsage, s)?;
-    let alias = if token(s, TokenKind::Keyword(Keyword::As)).is_ok() {
-        Some(dot_ident(IdentKind::NamespaceAlias, s)?)
+    keyword(s, Keyword::Open)?;
+    s.push_expectation(crate::CompletionConstraint::Namespace);
+    let name = dot_ident(s)?;
+    let alias = if keyword(s, Keyword::As).is_ok() {
+        Some(dot_ident(s)?)
     } else {
         None
     };
@@ -174,8 +176,8 @@ fn parse_open(s: &mut Scanner) -> Result<Box<ItemKind>> {
 }
 
 fn parse_newtype(s: &mut Scanner) -> Result<Box<ItemKind>> {
-    token(s, TokenKind::Keyword(Keyword::Newtype))?;
-    let name = ident(IdentKind::NewTypeName, s)?;
+    keyword(s, Keyword::Newtype)?;
+    let name = ident(s)?;
     token(s, TokenKind::Eq)?;
     let def = parse_ty_def(s)?;
     token(s, TokenKind::Semi)?;
@@ -224,9 +226,9 @@ fn ty_as_ident(ty: Ty) -> Result<Box<Ident>> {
 
 fn parse_callable_decl(s: &mut Scanner) -> Result<Box<CallableDecl>> {
     let lo = s.peek().span.lo;
-    let kind = if token(s, TokenKind::Keyword(Keyword::Function)).is_ok() {
+    let kind = if keyword(s, Keyword::Function).is_ok() {
         CallableKind::Function
-    } else if token(s, TokenKind::Keyword(Keyword::Operation)).is_ok() {
+    } else if keyword(s, Keyword::Operation).is_ok() {
         CallableKind::Operation
     } else {
         let token = s.peek();
@@ -237,9 +239,9 @@ fn parse_callable_decl(s: &mut Scanner) -> Result<Box<CallableDecl>> {
         )));
     };
 
-    let name = ident(IdentKind::CallableName, s)?;
+    let name = ident(s)?;
     let generics = if token(s, TokenKind::Lt).is_ok() {
-        let params = seq(s, |s| ty::param(IdentKind::TyParam, s))?.0;
+        let params = seq(s, ty::param)?.0;
         token(s, TokenKind::Gt)?;
         params
     } else {
@@ -249,7 +251,7 @@ fn parse_callable_decl(s: &mut Scanner) -> Result<Box<CallableDecl>> {
     let input = pat(s)?;
     token(s, TokenKind::Colon)?;
     let output = ty(s)?;
-    let functors = if token(s, TokenKind::Keyword(Keyword::Is)).is_ok() {
+    let functors = if keyword(s, Keyword::Is).is_ok() {
         Some(Box::new(ty::functor_expr(s)?))
     } else {
         None
@@ -292,12 +294,12 @@ fn parse_callable_body(s: &mut Scanner) -> Result<CallableBody> {
 
 fn parse_spec_decl(s: &mut Scanner) -> Result<Box<SpecDecl>> {
     let lo = s.peek().span.lo;
-    let spec = if token(s, TokenKind::Keyword(Keyword::Body)).is_ok() {
+    let spec = if keyword(s, Keyword::Body).is_ok() {
         Spec::Body
-    } else if token(s, TokenKind::Keyword(Keyword::Adjoint)).is_ok() {
+    } else if keyword(s, Keyword::Adjoint).is_ok() {
         Spec::Adj
-    } else if token(s, TokenKind::Keyword(Keyword::Controlled)).is_ok() {
-        if token(s, TokenKind::Keyword(Keyword::Adjoint)).is_ok() {
+    } else if keyword(s, Keyword::Controlled).is_ok() {
+        if keyword(s, Keyword::Adjoint).is_ok() {
             Spec::CtlAdj
         } else {
             Spec::Ctl
@@ -326,15 +328,15 @@ fn parse_spec_decl(s: &mut Scanner) -> Result<Box<SpecDecl>> {
 }
 
 fn parse_spec_gen(s: &mut Scanner) -> Result<SpecGen> {
-    if token(s, TokenKind::Keyword(Keyword::Auto)).is_ok() {
+    if keyword(s, Keyword::Auto).is_ok() {
         Ok(SpecGen::Auto)
-    } else if token(s, TokenKind::Keyword(Keyword::Distribute)).is_ok() {
+    } else if keyword(s, Keyword::Distribute).is_ok() {
         Ok(SpecGen::Distribute)
-    } else if token(s, TokenKind::Keyword(Keyword::Intrinsic)).is_ok() {
+    } else if keyword(s, Keyword::Intrinsic).is_ok() {
         Ok(SpecGen::Intrinsic)
-    } else if token(s, TokenKind::Keyword(Keyword::Invert)).is_ok() {
+    } else if keyword(s, Keyword::Invert).is_ok() {
         Ok(SpecGen::Invert)
-    } else if token(s, TokenKind::Keyword(Keyword::Slf)).is_ok() {
+    } else if keyword(s, Keyword::Slf).is_ok() {
         Ok(SpecGen::Slf)
     } else {
         Err(Error(ErrorKind::Rule(

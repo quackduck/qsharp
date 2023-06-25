@@ -9,7 +9,7 @@ use qsc::{
     gather_names,
     hir::{
         visit::{walk_item, Visitor},
-        ItemKind, {Block, Item, Package},
+        ItemKind, {Block, Item},
     },
     GatherOptions,
 };
@@ -211,8 +211,6 @@ struct ContextFinder {
 
 #[derive(Debug, PartialEq)]
 enum Context {
-    NoCompilation,
-    TopLevel,
     Namespace,
     Block,
     NotSignificant,
@@ -235,18 +233,4 @@ impl Visitor<'_> for ContextFinder {
             self.context = Context::Block;
         }
     }
-}
-
-fn callable_names_from_package(package: &Package) -> Vec<CompletionItem> {
-    package
-        .items
-        .values()
-        .filter_map(|i| match &i.kind {
-            ItemKind::Callable(callable_decl) => Some(CompletionItem {
-                label: callable_decl.name.name.to_string(),
-                kind: CompletionItemKind::Function,
-            }),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
 }

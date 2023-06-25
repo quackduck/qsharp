@@ -132,8 +132,7 @@ impl GlobalScope {
         };
         namespaces
             .get(namespace)
-            .and_then(|items| Some(items.keys().collect()))
-            .unwrap_or(Vec::new())
+            .map_or(Vec::new(), |items| items.keys().collect())
     }
 }
 
@@ -511,7 +510,7 @@ impl AstVisitor<'_> for With<'_> {
             ast::ExprKind::For(pat, iter, block) => {
                 self.visit_expr(iter);
                 self.with_pat(expr.span, ScopeKind::Block, pat, |visitor| {
-                    visitor.visit_block(block)
+                    visitor.visit_block(block);
                 });
             }
             ast::ExprKind::Lambda(_, input, output) => {
@@ -741,12 +740,7 @@ fn gather_names(
         names.extend(gather_implicit_opens(kind, globals, PRELUDE));
     }
 
-    names.extend(
-        globals
-            .get_all(kind, namespace)
-            .into_iter()
-            .map(|s| s.clone()),
-    );
+    names.extend(globals.get_all(kind, namespace).into_iter().cloned());
     names
 }
 
@@ -884,7 +878,7 @@ fn gather_scope_locals(
     }
 
     // Not sure why
-    names.into_iter().map(|s| s.clone()).collect()
+    names.into_iter().cloned().collect()
 }
 
 fn gather_implicit_opens(
@@ -896,7 +890,7 @@ fn gather_implicit_opens(
     for namespace in namespaces {
         names.extend(globals.get_all(kind, namespace.as_ref()));
     }
-    names.into_iter().map(|s| s.clone()).collect()
+    names.into_iter().cloned().collect()
 }
 
 fn resolve_implicit_opens(
@@ -924,7 +918,7 @@ fn gather_explicit_opens<'a>(
     for open in opens {
         names.extend(globals.get_all(kind, &open.namespace));
     }
-    names.into_iter().map(|s| s.clone()).collect()
+    names.into_iter().cloned().collect()
 }
 
 fn resolve_explicit_opens<'a>(
