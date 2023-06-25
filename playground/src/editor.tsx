@@ -98,15 +98,6 @@ export function Editor(props: {
     if (props.activeTab === "hir-tab") {
       props.setHir(await props.compiler.getHir(code));
     }
-
-    const model = editor.current?.getModel();
-    if (model) {
-      await props.languageService.updateDocument(
-        model.uri.toString(),
-        model.getVersionId(),
-        code
-      );
-    }
   };
 
   function onCheck(results: VSDiagnostic[]) {
@@ -142,6 +133,18 @@ export function Editor(props: {
     const newEditor = monaco.editor.create(editorDiv.current, {
       minimap: { enabled: false },
       lineNumbersMinChars: 3,
+    });
+
+    newEditor.onDidChangeModelContent(async () => {
+      log.debug("model changed");
+      const model = newEditor.getModel();
+      if (model) {
+        await props.languageService.updateDocument(
+          model.uri.toString(),
+          model.getVersionId(),
+          model.getValue()
+        );
+      }
     });
 
     monaco.languages.registerCompletionItemProvider("qsharp", {
