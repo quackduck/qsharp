@@ -144,7 +144,7 @@ pub(crate) fn get_completions(
             qsc::CompletionConstraint::Keyword(keyword) => {
                 if keywords_added.insert(keyword.clone()) {
                     items.push(CompletionItem {
-                        label: keyword,
+                        label: keyword.to_string(),
                         kind: CompletionItemKind::Keyword,
                     });
                 }

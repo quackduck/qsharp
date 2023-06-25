@@ -91,7 +91,7 @@ pub enum CompletionConstraint {
     Qubit,
     Ty,
     TyParam,
-    Keyword(String), // TODO: ahem
+    Keyword(&'static str),
 
     // Keep the below around just for debugging
     Debug(String), // arbitrary debug string to stick in list

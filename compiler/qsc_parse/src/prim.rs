@@ -43,7 +43,7 @@ pub(super) fn token(s: &mut Scanner, t: TokenKind) -> Result<()> {
 }
 
 pub(super) fn keyword(s: &mut Scanner, k: Keyword) -> Result<()> {
-    s.push_expectation(crate::CompletionConstraint::Keyword(k.to_string()));
+    s.push_expectation(crate::CompletionConstraint::Keyword(k.as_str()));
     if s.peek().kind == TokenKind::Keyword(k) {
         s.advance();
         Ok(())

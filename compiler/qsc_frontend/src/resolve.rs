@@ -206,7 +206,7 @@ impl Resolver {
             finder_mode: Some(FindContext {
                 offset,
                 kind: Some(NameKind::Term),
-                results: HashSet::new(),
+                results: None,
             }),
             resolver: self,
             assigner,
@@ -223,7 +223,7 @@ impl Resolver {
             finder_mode: Some(FindContext {
                 offset,
                 kind: Some(NameKind::Ty),
-                results: HashSet::new(),
+                results: None,
             }),
             resolver: self,
             assigner,
@@ -240,7 +240,7 @@ impl Resolver {
             finder_mode: Some(FindContext {
                 offset,
                 kind: None,
-                results: HashSet::new(),
+                results: None,
             }),
             resolver: self,
             assigner,
@@ -333,7 +333,7 @@ impl Resolver {
 pub(super) struct FindContext {
     offset: u32,
     kind: Option<NameKind>,
-    pub results: HashSet<Rc<str>>,
+    pub results: Option<HashSet<Rc<str>>>,
 }
 
 pub(super) struct With<'a> {
@@ -349,21 +349,24 @@ impl With<'_> {
         f(self);
 
         if let Some(filter) = &mut self.finder_mode {
-            if let Some(kind) = filter.kind {
-                if span.lo <= filter.offset && span.hi > filter.offset {
-                    // Of course we're going do to this and
-                    // throw the result away a bunch of times
-                    // if we're in nested scopes
+            if filter.results.is_none() {
+                // Nested scopes are a problem.
+                // I think if we do this only once,
+                // we end up operating on the innermost scope.
+                // That's good but there's got to be a better way.
 
-                    // TODO: Not getting locals here, hmm
-                    let terms = gather_names(
-                        kind,
-                        &self.resolver.globals,
-                        &self.resolver.scopes,
-                        &None, // TODO: need to try with namespaces for path
-                    );
-                    filter.results.clear();
-                    filter.results.extend(terms);
+                // Also this ends up finding locals even when they're
+                // declared after the offset, which is bad.
+                if let Some(kind) = filter.kind {
+                    if span.lo <= filter.offset && span.hi > filter.offset {
+                        let terms = gather_names(
+                            kind,
+                            &self.resolver.globals,
+                            &self.resolver.scopes,
+                            &None, // TODO: need to try with namespaces for path
+                        );
+                        filter.results = Some(HashSet::from_iter(terms));
+                    }
                 }
             }
         }
@@ -381,6 +384,8 @@ impl With<'_> {
                 .as_ref()
                 .expect("don't call find_results if you're not in finder mode")
                 .results
+                .as_ref()
+                .expect("don't call find_results if you haven't run the visitor yet")
                 .clone(),
             self.resolver.globals.namespaces.clone(),
         )

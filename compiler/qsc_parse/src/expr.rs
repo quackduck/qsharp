@@ -352,14 +352,14 @@ fn expr_interpolate(s: &mut Scanner) -> Result<Vec<StringComponent>> {
 fn lit(s: &mut Scanner) -> Result<Option<Lit>> {
     let lexeme = s.read();
 
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::True.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::Zero.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::One.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliZ.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::False.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliX.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliI.to_string()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliY.to_string()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::True.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::Zero.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::One.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliZ.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::False.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliX.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliI.as_str()));
+    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliY.as_str()));
 
     let token = s.peek();
     match lit_token(lexeme, token) {
