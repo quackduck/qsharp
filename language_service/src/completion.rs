@@ -54,7 +54,6 @@ pub(crate) fn get_completions(
         .source_map
         .find_by_name(source_name)
         .expect("source not found");
-    let truncated_source = &source.contents[..offset as usize];
 
     let mut items = Vec::new();
 
@@ -66,7 +65,10 @@ pub(crate) fn get_completions(
     let mut namespaces_added = None;
     let mut keywords_added = HashSet::new();
 
-    for completion_constraint in qsc_utils::whats_next(truncated_source) {
+    // there's some contradiction here because we're using one source file
+    // but we'll need the whole source map at some point. Makes no difference
+    // rn b/c there's only ever one file
+    for completion_constraint in qsc_utils::whats_next(&source.contents, offset) {
         match completion_constraint {
             qsc::CompletionConstraint::Path => {
                 names_added.get_or_insert_with(|| {
@@ -77,7 +79,7 @@ pub(crate) fn get_completions(
                         offset,
                         &GatherOptions::NamespacesAndTerms,
                     );
-                    for name in names {
+                    for name in names.unwrap_or_default() {
                         items.push(CompletionItem {
                             label: name.to_string(),
                             kind: CompletionItemKind::Function,
@@ -102,7 +104,7 @@ pub(crate) fn get_completions(
                         offset,
                         &GatherOptions::NamespacesAndTypes,
                     );
-                    for name in names {
+                    for name in names.unwrap_or_default() {
                         items.push(CompletionItem {
                             label: name.to_string(),
                             kind: CompletionItemKind::Interface,
@@ -142,7 +144,7 @@ pub(crate) fn get_completions(
                 });
             }
             qsc::CompletionConstraint::Keyword(keyword) => {
-                if keywords_added.insert(keyword.clone()) {
+                if keywords_added.insert(keyword.to_string()) {
                     items.push(CompletionItem {
                         label: keyword.to_string(),
                         kind: CompletionItemKind::Keyword,
@@ -167,24 +169,18 @@ pub(crate) fn get_completions(
                     kind: CompletionItemKind::Issue,
                 });
             }
-            _ => {} // qsc::CompletionConstraint::Binding => {
-                    //     items.push(CompletionItem {
-                    //         label: "~BINDING".to_string(),
-                    //         kind: CompletionItemKind::Issue,
-                    //     });
-                    // }
-                    // qsc::CompletionConstraint::Other(t) => {
-                    //     items.push(CompletionItem {
-                    //         label: format!("~TOKEN {t}"),
-                    //         kind: CompletionItemKind::Issue,
-                    //     });
-                    // }
-                    // qsc::CompletionConstraint::Debug(s) => {
-                    //     items.push(CompletionItem {
-                    //         label: format!("~~DEBUG {s}"),
-                    //         kind: CompletionItemKind::Issue,
-                    //     });
-                    // }
+            qsc::CompletionConstraint::Debug(s) => {
+                items.push(CompletionItem {
+                    label: format!("~~ {s}"),
+                    kind: CompletionItemKind::Issue,
+                });
+            }
+            qsc::CompletionConstraint::Other(t) => {
+                items.push(CompletionItem {
+                    label: format!("~ {t}"),
+                    kind: CompletionItemKind::Issue,
+                });
+            }
         }
     }
 

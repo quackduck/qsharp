@@ -20,8 +20,8 @@ pub enum Error {
 }
 
 #[must_use]
-pub fn whats_next(truncated_source: &str) -> Vec<CompletionConstraint> {
-    qsc_frontend::compile::whats_next(truncated_source)
+pub fn whats_next(source: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+    qsc_frontend::compile::whats_next(source, cursor_offset)
 }
 
 #[must_use]

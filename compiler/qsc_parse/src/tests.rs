@@ -60,3 +60,116 @@ fn check_map<T>(
         Err(error) => expect.assert_eq(&format!("{error:#?}\n\n{errors:#?}")),
     }
 }
+
+#[test]
+fn test_completion_end_of_keyword() {
+    let input = "namespace Foo { open ".to_string();
+    let cursor = 20;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    // Can't handle the case where the cursor is at the end of the keyword
+    // Gets too weird when the adjacent token is not a word
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[]");
+}
+
+#[test]
+fn test_completion_after_open() {
+    let input = "namespace Foo { open ".to_string();
+    let cursor = 21;
+    let input = input[..cursor].to_string();
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    // a namespace follows the open keyword
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Namespace]");
+}
+
+#[test]
+fn test_completion_begin_ident() {
+    let input = "namespace Foo { open X".to_string();
+    let cursor = 21;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    // right at the beginning of the namespace name.
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Namespace]");
+}
+
+#[test]
+fn test_completion_middle_ident() {
+    let input = "namespace Foo { open ABCD".to_string();
+    let cursor = 23;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    // middle of the namespace name
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Namespace]");
+}
+
+#[test]
+fn test_completion_end_ident() {
+    let input = "namespace Foo { open ABCD ".to_string();
+    let cursor = 25;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    // end of the namespace name
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[]");
+}
+
+#[test]
+fn test_completion_middle() {
+    let input = "namespace Foo { open ABCD; open Foo; operation Main() : Unit {} }".to_string();
+    let cursor = 23;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Namespace]");
+}
+
+#[test]
+fn test_completion_lotsawhitespace() {
+    let input =
+        r#"namespace MyQuantumApp { open Microsoft.Quantum.Diagnostics;      }"#.to_string();
+    let cursor = 61;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
+}
+
+#[test]
+fn test_completion_after_semicolon() {
+    let input =
+        r#"namespace MyQuantumApp { open Microsoft.Quantum.Diagnostics;      }"#.to_string();
+    let cursor = 60;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    // Alas, putting the cursor at the butt end of the semicolon doesn't yield any
+    // completions because we think we're still in the semicolon token. If we fixed
+    // this that'd get us in trouble when the last token is a word. Not great
+    // but we can live with it.
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[]");
+}
+
+#[test]
+fn test_completion_before_attr() {
+    let input =
+        r#"namespace Foo { open Microsoft.Quantum.Diagnostics;          @EntryPoint() operation Main() : Unit {} }"#.to_string();
+    let cursor = 55;
+    let mut scanner = Scanner::completion_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.last_expected();
+
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
+}

@@ -98,11 +98,21 @@ pub enum CompletionConstraint {
     Other(String), // Some other token kind that we don't care about
 }
 
-pub fn whats_next(input: &str) -> Vec<CompletionConstraint> {
-    let mut scanner = Scanner::new(input);
+pub fn whats_next(input: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+    let input = input[..(cursor_offset as usize)].to_string();
+    let mut scanner = Scanner::completion_mode(&input, cursor_offset);
     let mut last_expected_tokens = Vec::new();
     let parse_result = item::parse_namespaces(&mut scanner);
-    last_expected_tokens.append(&mut scanner.last_expected);
+    if let Some(r) = &mut scanner.last_expected() {
+        let mut v = r.1.clone();
+        last_expected_tokens.append(&mut v);
+    }
+
+    let mut items = vec![CompletionConstraint::Debug(format!("{}", cursor_offset))];
+    items.push(CompletionConstraint::Debug(format!(
+        "{:?}",
+        last_expected_tokens,
+    )));
     let (_, source_errors) = match parse_result {
         Ok(namespaces) => (namespaces, scanner.into_errors()),
         Err(error) => {
@@ -111,14 +121,8 @@ pub fn whats_next(input: &str) -> Vec<CompletionConstraint> {
             (Vec::new(), errors)
         }
     };
-
-    let mut items = vec![CompletionConstraint::Debug(format!("{}", input.len()))];
-    items.push(CompletionConstraint::Debug(format!(
-        "{:?}",
-        last_expected_tokens,
-    )));
     items.push(CompletionConstraint::Debug(format!("{:?}", source_errors,)));
-    items.extend(last_expected_tokens.into_iter().map(|x| x.1));
+    items.extend(last_expected_tokens.into_iter());
     items
 }
 

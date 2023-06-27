@@ -361,8 +361,8 @@ pub fn std(store: &PackageStore) -> CompileUnit {
 }
 
 #[must_use]
-pub fn whats_next(truncated_source: &str) -> Vec<CompletionConstraint> {
-    qsc_parse::whats_next(truncated_source)
+pub fn whats_next(source: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+    qsc_parse::whats_next(source, cursor_offset)
 }
 
 pub enum GatherOptions {
@@ -378,7 +378,7 @@ pub fn gather_names(
     package: &ast::Package,
     offset: u32,
     gather_options: &GatherOptions,
-) -> (HashSet<Rc<str>>, HashSet<Rc<str>>) {
+) -> (Option<HashSet<Rc<str>>>, HashSet<Rc<str>>) {
     let mut assigner = HirAssigner::new();
 
     let mut globals = resolve::GlobalTable::new();

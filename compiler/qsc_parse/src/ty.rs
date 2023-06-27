@@ -83,12 +83,12 @@ fn base(s: &mut Scanner) -> Result<Ty> {
     let kind = if keyword(s, Keyword::Underscore).is_ok() {
         Ok(TyKind::Hole)
     } else if let Some(name) = {
-        s.push_expectation(CompletionConstraint::TyParam);
+        s.push_expectation(vec![CompletionConstraint::TyParam]);
         opt(s, param)?
     } {
         Ok(TyKind::Param(name))
     } else if let Some(path) = {
-        s.push_expectation(CompletionConstraint::Ty);
+        s.push_expectation(vec![CompletionConstraint::Ty]);
         opt(s, path)?
     } {
         Ok(TyKind::Path(path))

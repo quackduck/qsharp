@@ -44,8 +44,8 @@ pub(crate) fn compile_document(source_name: &str, source_contents: &str) -> Comp
     }
 }
 
-pub(crate) fn whats_next(truncated_source: &str) -> Vec<CompletionConstraint> {
-    compile::whats_next(truncated_source)
+pub(crate) fn whats_next(source: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+    compile::whats_next(source, cursor_offset)
 }
 
 pub(crate) fn span_contains(span: Span, offset: u32) -> bool {

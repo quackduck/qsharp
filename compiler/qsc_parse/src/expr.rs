@@ -199,7 +199,7 @@ fn expr_base(s: &mut Scanner) -> Result<Box<Expr>> {
     } else if let Some(l) = lit(s)? {
         Ok(Box::new(ExprKind::Lit(Box::new(l))))
     } else if let Some(p) = {
-        s.push_expectation(CompletionConstraint::Path);
+        s.push_expectation(vec![CompletionConstraint::Path]);
         opt(s, path)?
     } {
         Ok(Box::new(ExprKind::Path(p)))
@@ -352,14 +352,17 @@ fn expr_interpolate(s: &mut Scanner) -> Result<Vec<StringComponent>> {
 fn lit(s: &mut Scanner) -> Result<Option<Lit>> {
     let lexeme = s.read();
 
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::True.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::Zero.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::One.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliZ.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::False.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliX.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliI.as_str()));
-    s.push_expectation(CompletionConstraint::Keyword(Keyword::PauliY.as_str()));
+    // I'm sure this could be more efficient
+    s.push_expectation(vec![
+        CompletionConstraint::Keyword(Keyword::True.as_str()),
+        CompletionConstraint::Keyword(Keyword::Zero.as_str()),
+        CompletionConstraint::Keyword(Keyword::One.as_str()),
+        CompletionConstraint::Keyword(Keyword::PauliZ.as_str()),
+        CompletionConstraint::Keyword(Keyword::False.as_str()),
+        CompletionConstraint::Keyword(Keyword::PauliX.as_str()),
+        CompletionConstraint::Keyword(Keyword::PauliI.as_str()),
+        CompletionConstraint::Keyword(Keyword::PauliY.as_str()),
+    ]);
 
     let token = s.peek();
     match lit_token(lexeme, token) {
@@ -615,7 +618,7 @@ fn lambda_op(s: &mut Scanner, input: Expr, kind: CallableKind) -> Result<Box<Exp
 }
 
 fn field_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {
-    s.push_expectation(CompletionConstraint::Field);
+    s.push_expectation(vec![CompletionConstraint::Field]);
     Ok(Box::new(ExprKind::Field(lhs, ident(s)?)))
 }
 

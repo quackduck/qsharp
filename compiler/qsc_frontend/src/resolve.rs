@@ -351,7 +351,7 @@ impl With<'_> {
         if let Some(filter) = &mut self.finder_mode {
             if filter.results.is_none() {
                 // Nested scopes are a problem.
-                // I think if we do this only once,
+                // I think if run do this only once,
                 // we end up operating on the innermost scope.
                 // That's good but there's got to be a better way.
 
@@ -363,9 +363,9 @@ impl With<'_> {
                             kind,
                             &self.resolver.globals,
                             &self.resolver.scopes,
-                            &None, // TODO: need to try with namespaces for path
+                            &None, // TODO: need to try with namespaces for path completions
                         );
-                        filter.results = Some(HashSet::from_iter(terms));
+                        filter.results = Some(terms.into_iter().cloned().collect::<HashSet<_>>());
                     }
                 }
             }
@@ -377,15 +377,13 @@ impl With<'_> {
             .expect("pushed scope should be the last element on the stack");
     }
 
-    pub fn find_results(&self) -> (HashSet<Rc<str>>, HashSet<Rc<str>>) {
+    pub fn find_results(&self) -> (Option<HashSet<Rc<str>>>, HashSet<Rc<str>>) {
         // names and namespaces
         (
             self.finder_mode
                 .as_ref()
                 .expect("don't call find_results if you're not in finder mode")
                 .results
-                .as_ref()
-                .expect("don't call find_results if you haven't run the visitor yet")
                 .clone(),
             self.resolver.globals.namespaces.clone(),
         )
@@ -717,12 +715,12 @@ fn bind_global_item(
     }
 }
 
-fn gather_names(
+fn gather_names<'a>(
     kind: NameKind,
-    globals: &GlobalScope,
-    locals: &[Scope],
+    globals: &'a GlobalScope,
+    locals: &'a [Scope],
     namespace: &Option<Box<Ident>>,
-) -> Vec<Rc<str>> {
+) -> Vec<&'a Rc<str>> {
     let mut vars = true;
     let mut names = Vec::new();
     let namespace = namespace.as_ref().map_or("", |i| &i.name);
@@ -745,7 +743,7 @@ fn gather_names(
         names.extend(gather_implicit_opens(kind, globals, PRELUDE));
     }
 
-    names.extend(globals.get_all(kind, namespace).into_iter().cloned());
+    names.extend(globals.get_all(kind, namespace).into_iter());
     names
 }
 
@@ -858,12 +856,12 @@ fn resolve_scope_locals(
     None
 }
 
-fn gather_scope_locals(
+fn gather_scope_locals<'a>(
     kind: NameKind,
-    globals: &GlobalScope,
-    scope: &Scope,
+    globals: &'a GlobalScope,
+    scope: &'a Scope,
     vars: bool,
-) -> Vec<Rc<str>> {
+) -> Vec<&'a Rc<str>> {
     let mut names = Vec::new();
     if vars {
         match kind {
@@ -882,20 +880,19 @@ fn gather_scope_locals(
         names.extend(globals.get_all(kind, namespace).iter());
     }
 
-    // Not sure why
-    names.into_iter().cloned().collect()
+    names
 }
 
 fn gather_implicit_opens(
     kind: NameKind,
     globals: &GlobalScope,
     namespaces: impl IntoIterator<Item = impl AsRef<str>>,
-) -> Vec<Rc<str>> {
+) -> Vec<&Rc<str>> {
     let mut names = Vec::new();
     for namespace in namespaces {
         names.extend(globals.get_all(kind, namespace.as_ref()));
     }
-    names.into_iter().cloned().collect()
+    names
 }
 
 fn resolve_implicit_opens(
@@ -916,14 +913,14 @@ fn resolve_implicit_opens(
 
 fn gather_explicit_opens<'a>(
     kind: NameKind,
-    globals: &GlobalScope,
+    globals: &'a GlobalScope,
     opens: impl IntoIterator<Item = &'a Open>,
-) -> Vec<Rc<str>> {
+) -> Vec<&'a Rc<str>> {
     let mut names = Vec::new();
     for open in opens {
         names.extend(globals.get_all(kind, &open.namespace));
     }
-    names.into_iter().cloned().collect()
+    names
 }
 
 fn resolve_explicit_opens<'a>(
