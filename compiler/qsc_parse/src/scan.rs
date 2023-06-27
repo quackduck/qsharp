@@ -15,7 +15,6 @@ struct CompletionFilter {
     cursor_offset: u32,
     at_cursor: bool,
     last_expected: Option<(u32, Vec<CompletionConstraint>)>,
-    // sealed: bool,
 }
 
 pub(super) struct Scanner<'a> {
@@ -60,10 +59,9 @@ impl<'a> Scanner<'a> {
             peek: peek.unwrap_or_else(|| eof(input.len())),
             offset: 0,
             completion_mode: Some(CompletionFilter {
-                at_cursor: false,
+                at_cursor: cursor_offset == 0,
                 cursor_offset,
                 last_expected: None,
-                // sealed: false,
             }),
         }
     }
@@ -120,19 +118,21 @@ impl<'a> Scanner<'a> {
                 .extend(errors.into_iter().map(|e| Error(ErrorKind::Lex(e))));
             self.peek = peek.unwrap_or_else(|| eof(self.input.len()));
 
-            // did we hit the completion cursor? start collecting expectations.
-            // eof is a weird case because it's a 0-length token.
-            // if cursor is at the end of a token we don't use it
-            // because it gets unmanageable when the token is not a word.
             if let Some(c) = &mut self.completion_mode {
-                if self.offset < c.cursor_offset
-                    && (self.peek.span.hi > c.cursor_offset || self.peek.kind == TokenKind::Eof)
-                {
-                    c.at_cursor = true;
-                    // pretend we're at eof because we don't
-                    // want the parser to find the next (valid) token
-                    // and stop trying possibilities.
-                    self.peek = eof(c.cursor_offset as usize);
+                if self.offset < c.cursor_offset && self.peek.span.hi >= c.cursor_offset {
+                    // did we hit the completion cursor? start collecting expectations.
+                    if self.peek.span.hi == c.cursor_offset && !is_word_or_eof(self.peek.kind) {
+                        // if cursor is touching the end of a token, only count if it's eof (because it's 0-length)
+                        // or if it's a word. If it's not a word then let's move the cursor over one so that it will
+                        // be counted as part of the next token.
+                        c.cursor_offset += 1;
+                    } else {
+                        c.at_cursor = true;
+                        // pretend we're at eof because we don't
+                        // want the parser to find the next (valid) token
+                        // and stop trying possibilities.
+                        self.peek = eof(c.cursor_offset as usize);
+                    }
                 }
             }
         }
@@ -225,4 +225,11 @@ fn next_ok<T, E>(iter: impl Iterator<Item = Result<T, E>>) -> (Option<T>, Vec<E>
 
 fn contains<'a>(token: TokenKind, tokens: impl IntoIterator<Item = &'a TokenKind>) -> bool {
     tokens.into_iter().any(|&t| t == token)
+}
+
+fn is_word_or_eof(t: TokenKind) -> bool {
+    if let TokenKind::Keyword(_) = t {
+        return true;
+    }
+    t == TokenKind::Ident || t == TokenKind::Eof
 }

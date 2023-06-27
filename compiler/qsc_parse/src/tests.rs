@@ -69,9 +69,7 @@ fn test_completion_end_of_keyword() {
     let _ = crate::item::parse_namespaces(&mut scanner);
     let v = scanner.last_expected();
 
-    // Can't handle the case where the cursor is at the end of the keyword
-    // Gets too weird when the adjacent token is not a word
-    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[]");
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
 }
 
 #[test]
@@ -120,7 +118,7 @@ fn test_completion_end_ident() {
     let v = scanner.last_expected();
 
     // end of the namespace name
-    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[]");
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Namespace]");
 }
 
 #[test]
@@ -155,11 +153,7 @@ fn test_completion_after_semicolon() {
     let _ = crate::item::parse_namespaces(&mut scanner);
     let v = scanner.last_expected();
 
-    // Alas, putting the cursor at the butt end of the semicolon doesn't yield any
-    // completions because we think we're still in the semicolon token. If we fixed
-    // this that'd get us in trouble when the last token is a word. Not great
-    // but we can live with it.
-    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[]");
+    assert_eq!(format!("{:?}", v.unwrap_or_default().1), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
 }
 
 #[test]

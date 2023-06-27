@@ -99,8 +99,7 @@ pub enum CompletionConstraint {
 }
 
 pub fn whats_next(input: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
-    let input = input[..(cursor_offset as usize)].to_string();
-    let mut scanner = Scanner::completion_mode(&input, cursor_offset);
+    let mut scanner = Scanner::completion_mode(input, cursor_offset);
     let mut last_expected_tokens = Vec::new();
     let parse_result = item::parse_namespaces(&mut scanner);
     if let Some(r) = &mut scanner.last_expected() {
