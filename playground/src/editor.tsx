@@ -8,6 +8,7 @@ import {
   CompilerState,
   ICompilerWorker,
   ILanguageServiceWorker,
+  LanguageServiceEvent,
   QscEventTarget,
   VSDiagnostic,
   log,
@@ -25,10 +26,23 @@ function VSDiagsToMarkers(
   srcModel: monaco.editor.ITextModel
 ): monaco.editor.IMarkerData[] {
   return errors.map((err) => {
+    let severity = monaco.MarkerSeverity.Error;
+    switch (err.severity) {
+      case "error":
+        severity = monaco.MarkerSeverity.Error;
+        break;
+      case "warning":
+        severity = monaco.MarkerSeverity.Warning;
+        break;
+      case "info":
+        severity = monaco.MarkerSeverity.Info;
+        break;
+    }
+
     const startPos = srcModel.getPositionAt(err.start_pos);
     const endPos = srcModel.getPositionAt(err.end_pos);
     const marker: monaco.editor.IMarkerData = {
-      severity: monaco.MarkerSeverity.Error, // TODO: map severity from the diagnostic
+      severity,
       message: err.message,
       startLineNumber: startPos.lineNumber,
       startColumn: startPos.column,
@@ -59,8 +73,8 @@ export function Editor(props: {
   const errMarks = useRef<ErrCollection>({ checkDiags: [], shotDiags: [] });
   const editorDiv = useRef<HTMLDivElement>(null);
 
-  // Maintain a ref to the latest check function, as it closes over a bunch of stuff
-  const checkRef = useRef(async () => {
+  // Maintain a ref to the latest getHir function, as it closes over a bunch of stuff
+  const hirRef = useRef(async () => {
     return;
   });
 
@@ -71,9 +85,14 @@ export function Editor(props: {
   );
   const [hasCheckErrors, setHasCheckErrors] = useState(false);
 
-  function markErrors() {
+  function markErrors(version?: number) {
     const model = editor.current?.getModel();
     if (!model) return;
+
+    if (version != null && version !== model.getVersionId()) {
+      // Diagnostics event received for an outdated model
+      return;
+    }
 
     const errs = [
       ...errMarks.current.checkDiags,
@@ -90,21 +109,14 @@ export function Editor(props: {
     setErrors(errList);
   }
 
-  checkRef.current = async function updateCode() {
-    // This should get called on initial load and on every document update.
+  hirRef.current = async function updateHir() {
     const code = editor.current?.getValue();
-    if (code == null) throw new Error("Why is code null?");
+    if (code == null) return;
 
     if (props.activeTab === "hir-tab") {
       props.setHir(await props.compiler.getHir(code));
     }
   };
-
-  function onCheck(results: VSDiagnostic[]) {
-    errMarks.current.checkDiags = results;
-    markErrors();
-    setHasCheckErrors(results.length > 0);
-  }
 
   async function onRun() {
     const code = editor.current?.getValue();
@@ -135,118 +147,17 @@ export function Editor(props: {
       lineNumbersMinChars: 3,
     });
 
-    newEditor.onDidChangeModelContent(async () => {
-      log.debug("model changed");
-      const model = newEditor.getModel();
-      if (model) {
-        await props.languageService.updateDocument(
-          model.uri.toString(),
-          model.getVersionId(),
-          model.getValue()
-        );
-      }
-    });
-
-    monaco.languages.registerCompletionItemProvider("qsharp", {
-      // @ts-expect-error - Monaco's types expect range to be defined,
-      // but it's actually optional and the default behavior is better
-      provideCompletionItems: async (
-        model: monaco.editor.ITextModel,
-        position: monaco.Position
-      ) => {
-        const completions = await props.languageService.getCompletions(
-          model.uri.toString(),
-          model.getOffsetAt(position)
-        );
-        return {
-          suggestions: completions.items.map((i) => {
-            let kind;
-            switch (i.kind) {
-              case "function":
-                kind = monaco.languages.CompletionItemKind.Function;
-                break;
-              case "module":
-                kind = monaco.languages.CompletionItemKind.Module;
-                break;
-              case "keyword":
-                kind = monaco.languages.CompletionItemKind.Keyword;
-                break;
-              case "issue":
-                kind = monaco.languages.CompletionItemKind.Issue;
-                break;
-            }
-            return {
-              label: i.label,
-              kind: kind,
-              insertText: i.label,
-              range: undefined,
-            };
-          }),
-        };
-      },
-    });
-
-    monaco.languages.registerHoverProvider("qsharp", {
-      provideHover: async (
-        model: monaco.editor.ITextModel,
-        position: monaco.Position
-      ) => {
-        const hover = await props.languageService.getHover(
-          model.uri.toString(),
-          model.getOffsetAt(position)
-        );
-
-        if (hover) {
-          const start = model.getPositionAt(hover.span.start);
-          const end = model.getPositionAt(hover.span.end);
-
-          return {
-            contents: [{ value: hover.contents }],
-            range: {
-              startLineNumber: start.lineNumber,
-              startColumn: start.column,
-              endLineNumber: end.lineNumber,
-              endColumn: end.column,
-            },
-          };
-        }
-        return null;
-      },
-    });
-
-    monaco.languages.registerDefinitionProvider("qsharp", {
-      provideDefinition: async (
-        model: monaco.editor.ITextModel,
-        position: monaco.Position
-      ) => {
-        const definition = await props.languageService.getDefinition(
-          model.uri.toString(),
-          model.getOffsetAt(position)
-        );
-
-        if (!definition) return null;
-        const uri = monaco.Uri.parse(definition.source);
-        const definitionPosition =
-          uri.toString() === model.uri.toString()
-            ? model.getPositionAt(definition.offset)
-            : { lineNumber: 1, column: 1 };
-        return {
-          uri,
-          range: {
-            startLineNumber: definitionPosition.lineNumber,
-            startColumn: definitionPosition.column,
-            // TODO: get accurate range from language service
-            endLineNumber: definitionPosition.lineNumber,
-            endColumn: definitionPosition.column + 1,
-          },
-        };
-      },
-    });
-
     editor.current = newEditor;
     const srcModel = monaco.editor.createModel(props.code, "qsharp");
     newEditor.setModel(srcModel);
-    srcModel.onDidChangeContent(() => checkRef.current());
+    srcModel.onDidChangeContent(() => hirRef.current());
+    srcModel.onDidChangeContent(async () => {
+      await props.languageService.updateDocument(
+        srcModel.uri.toString(),
+        srcModel.getVersionId(),
+        srcModel.getValue()
+      );
+    });
 
     function onResize() {
       newEditor.layout();
@@ -262,14 +173,24 @@ export function Editor(props: {
   }, []);
 
   useEffect(() => {
-    props.languageService.addEventListener("diagnostics", (evt) =>
-      onCheck(evt.detail.diagnostics)
-    );
+    function onDiagnostics(evt: LanguageServiceEvent) {
+      const diagnostics = evt.detail.diagnostics;
+      errMarks.current.checkDiags = diagnostics;
+      markErrors(evt.detail.version);
+      setHasCheckErrors(diagnostics.length > 0);
+    }
+
+    props.languageService.addEventListener("diagnostics", onDiagnostics);
+
+    return () => {
+      log.info("Removing diagnostics listener");
+      props.languageService.removeEventListener("diagnostics", onDiagnostics);
+    };
   }, [props.languageService]);
 
   useEffect(() => {
     // Whenever the active tab changes, run check again.
-    checkRef.current();
+    hirRef.current();
   }, [props.activeTab]);
 
   useEffect(() => {
@@ -289,7 +210,7 @@ export function Editor(props: {
 
   useEffect(() => {
     // Whenever the active tab changes, run check again.
-    checkRef.current();
+    hirRef.current();
   }, [props.activeTab]);
 
   // On reset, reload the initial code
