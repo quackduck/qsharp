@@ -206,6 +206,9 @@ function registerMonacoLanguageServiceProviders(
             case "issue":
               kind = monaco.languages.CompletionItemKind.Issue;
               break;
+            case "interface":
+              kind = monaco.languages.CompletionItemKind.Interface;
+              break;
           }
           return {
             label: i.label,
