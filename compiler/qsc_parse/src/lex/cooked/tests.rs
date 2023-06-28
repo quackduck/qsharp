@@ -53,7 +53,8 @@ fn op_string(kind: TokenKind) -> Option<String> {
         | TokenKind::Ident
         | TokenKind::Int(_)
         | TokenKind::Keyword(_)
-        | TokenKind::String(_) => None,
+        | TokenKind::String(_)
+        | TokenKind::Wildcard => None,
     }
 }
 
@@ -1661,4 +1662,159 @@ fn comment_four_slashes() {
             ]
         "#]],
     );
+}
+
+#[test]
+fn wildcard_in_ident() {
+    let actual: Vec<_> = Lexer::with_wildcard("hello", 1).collect();
+    expect![[r#"
+        [
+            Ok(
+                Token {
+                    kind: Wildcard,
+                    span: Span {
+                        lo: 0,
+                        hi: 5,
+                    },
+                },
+            ),
+        ]
+    "#]]
+    .assert_debug_eq(&actual);
+}
+
+#[test]
+fn wildcard_in_whitespace() {
+    let actual: Vec<_> = Lexer::with_wildcard("hi     there", 5).collect();
+    expect![[r#"
+        [
+            Ok(
+                Token {
+                    kind: Ident,
+                    span: Span {
+                        lo: 0,
+                        hi: 2,
+                    },
+                },
+            ),
+            Ok(
+                Token {
+                    kind: Wildcard,
+                    span: Span {
+                        lo: 5,
+                        hi: 5,
+                    },
+                },
+            ),
+            Ok(
+                Token {
+                    kind: Ident,
+                    span: Span {
+                        lo: 7,
+                        hi: 12,
+                    },
+                },
+            ),
+        ]
+    "#]]
+    .assert_debug_eq(&actual);
+}
+
+#[test]
+fn wildcard_between_ops() {
+    let actual: Vec<_> = Lexer::with_wildcard("foo()", 4).collect();
+    expect![[r#"
+        [
+            Ok(
+                Token {
+                    kind: Ident,
+                    span: Span {
+                        lo: 0,
+                        hi: 3,
+                    },
+                },
+            ),
+            Ok(
+                Token {
+                    kind: Open(
+                        Paren,
+                    ),
+                    span: Span {
+                        lo: 3,
+                        hi: 4,
+                    },
+                },
+            ),
+            Ok(
+                Token {
+                    kind: Wildcard,
+                    span: Span {
+                        lo: 4,
+                        hi: 4,
+                    },
+                },
+            ),
+            Ok(
+                Token {
+                    kind: Close(
+                        Paren,
+                    ),
+                    span: Span {
+                        lo: 4,
+                        hi: 5,
+                    },
+                },
+            ),
+        ]
+    "#]]
+    .assert_debug_eq(&actual);
+}
+
+#[test]
+fn wildcard_at_eof() {
+    let actual: Vec<_> = Lexer::with_wildcard("(", 1).collect();
+    expect![[r#"
+        [
+            Ok(
+                Token {
+                    kind: Open(
+                        Paren,
+                    ),
+                    span: Span {
+                        lo: 0,
+                        hi: 1,
+                    },
+                },
+            ),
+            Ok(
+                Token {
+                    kind: Wildcard,
+                    span: Span {
+                        lo: 1,
+                        hi: 1,
+                    },
+                },
+            ),
+        ]
+    "#]]
+    .assert_debug_eq(&actual);
+}
+
+#[test]
+fn wildcard_in_ident_eof() {
+    let actual: Vec<_> = Lexer::with_wildcard("hello", 5).collect();
+    expect![[r#"
+        [
+            Ok(
+                Token {
+                    kind: Wildcard,
+                    span: Span {
+                        lo: 0,
+                        hi: 5,
+                    },
+                },
+            ),
+        ]
+    "#]]
+    .assert_debug_eq(&actual);
 }
