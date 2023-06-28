@@ -9,6 +9,7 @@ fn in_block_contains_std_functions() {
     assert_completions_contain(
         r#"
     namespace Test {
+        open FakeStdLib;
         operation Test() : Unit {
             ↘
         }

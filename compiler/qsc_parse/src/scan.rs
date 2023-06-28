@@ -11,12 +11,6 @@ use qsc_data_structures::span::Span;
 #[derive(Debug)]
 pub(super) struct NoBarrierError;
 
-struct CompletionFilter {
-    cursor_offset: u32,
-    at_cursor: bool,
-    last_expected: Option<(u32, Vec<CompletionConstraint>)>,
-}
-
 pub(super) struct Scanner<'a> {
     input: &'a str,
     tokens: Lexer<'a>,
@@ -24,7 +18,7 @@ pub(super) struct Scanner<'a> {
     errors: Vec<Error>,
     peek: Token,
     offset: u32,
-    completion_mode: Option<CompletionFilter>,
+    predictions: Option<Vec<CompletionConstraint>>,
 }
 
 impl<'a> Scanner<'a> {
@@ -41,12 +35,12 @@ impl<'a> Scanner<'a> {
                 .collect(),
             peek: peek.unwrap_or_else(|| eof(input.len())),
             offset: 0,
-            completion_mode: None,
+            predictions: None,
         }
     }
 
-    pub(super) fn completion_mode(input: &'a str, cursor_offset: u32) -> Self {
-        let mut tokens = Lexer::new(input);
+    pub(super) fn predict_mode(input: &'a str, cursor_offset: u32) -> Self {
+        let mut tokens = Lexer::with_wildcard(input, cursor_offset);
         let (peek, errors) = next_ok(&mut tokens);
         Self {
             input,
@@ -58,43 +52,42 @@ impl<'a> Scanner<'a> {
                 .collect(),
             peek: peek.unwrap_or_else(|| eof(input.len())),
             offset: 0,
-            completion_mode: Some(CompletionFilter {
-                at_cursor: cursor_offset == 0,
-                cursor_offset,
-                last_expected: None,
-            }),
+            predictions: Some(Vec::new()),
         }
     }
 
     pub(super) fn push_expectation(&mut self, expectations: Vec<CompletionConstraint>) {
-        if let Some(filter) = &mut self.completion_mode {
+        if let Some(last_expected) = &mut self.predictions {
             println!(
                 "expecting {:?} at ({},{}] ",
                 expectations, self.offset, self.peek.span.hi
             );
 
-            if filter.at_cursor {
+            if self.peek.kind == TokenKind::Wildcard {
                 println!("  recorded");
-                filter
-                    .last_expected
-                    // kill this value it's misleading
-                    .get_or_insert_with(|| (9999, Vec::new()))
-                    .1
-                    .extend(expectations)
+                last_expected.extend(expectations)
             }
         }
     }
 
-    pub(super) fn last_expected(&self) -> Option<(u32, Vec<CompletionConstraint>)> {
+    pub(super) fn last_expected(&self) -> Vec<CompletionConstraint> {
         // avoid copy at some point... or don't, whatever, this gets called once
-        self.completion_mode
+        return self
+            .predictions
             .as_ref()
-            .expect("don't call into_expected if you're not in completion mode")
-            .last_expected
-            .clone()
+            .expect("don't call last_expected if you're not in completion mode")
+            .clone();
     }
 
     pub(super) fn peek(&self) -> Token {
+        if self.predictions.is_some() && self.peek.kind == TokenKind::Wildcard {
+            println!("returning fake eof");
+            // pretend we're at eof because we don't
+            // want the parser to find the next (valid) token
+            // and stop trying possibilities.
+            return eof(self.peek.span.lo as usize);
+        }
+        println!("peeked at {}", self.peek.kind);
         self.peek
     }
 
@@ -111,39 +104,24 @@ impl<'a> Scanner<'a> {
 
     pub(super) fn advance(&mut self) {
         print!("advancing {} -> ", self.offset);
+
         if self.peek.kind != TokenKind::Eof {
             self.offset = self.peek.span.hi;
             let (peek, errors) = next_ok(&mut self.tokens);
             self.errors
                 .extend(errors.into_iter().map(|e| Error(ErrorKind::Lex(e))));
             self.peek = peek.unwrap_or_else(|| eof(self.input.len()));
-
-            if let Some(c) = &mut self.completion_mode {
-                if self.offset < c.cursor_offset && self.peek.span.hi >= c.cursor_offset {
-                    // did we hit the completion cursor? start collecting expectations.
-                    if self.peek.span.hi == c.cursor_offset && !is_word_or_eof(self.peek.kind) {
-                        // if cursor is touching the end of a token, only count if it's eof (because it's 0-length)
-                        // or if it's a word. If it's not a word then let's move the cursor over one so that it will
-                        // be counted as part of the next token.
-                        c.cursor_offset += 1;
-                    } else {
-                        c.at_cursor = true;
-                        // pretend we're at eof because we don't
-                        // want the parser to find the next (valid) token
-                        // and stop trying possibilities.
-                        self.peek = eof(c.cursor_offset as usize);
-                    }
-                }
-            }
         }
         // offset is the end of the last token, peek.span.lo is the beginning of the current token
         println!(
             "{} ({}) {}",
             self.offset,
             self.peek.span.lo,
-            self.completion_mode
-                .as_ref()
-                .map_or("", |c| if c.at_cursor { "at cursor!" } else { "" })
+            if self.peek.kind == TokenKind::Wildcard {
+                "wildcard!"
+            } else {
+                ""
+            }
         );
     }
 
@@ -166,15 +144,6 @@ impl<'a> Scanner<'a> {
     /// barrier token is found first, it is not consumed.
     pub(super) fn recover(&mut self, tokens: &[TokenKind]) {
         println!("recovering at {} ", self.peek.span.lo);
-        if let Some(c) = &mut self.completion_mode {
-            if c.at_cursor {
-                println!("stopped collecting");
-                // Once we've found the cursor, we don't want to keep collecting expectations
-                // after error recovery. If we've just done recovery
-                // at the cursor then the expected tokens aren't gonna be that helpful.
-                c.at_cursor = false;
-            }
-        }
         loop {
             let peek = self.peek.kind;
             if contains(peek, tokens) {
@@ -225,11 +194,4 @@ fn next_ok<T, E>(iter: impl Iterator<Item = Result<T, E>>) -> (Option<T>, Vec<E>
 
 fn contains<'a>(token: TokenKind, tokens: impl IntoIterator<Item = &'a TokenKind>) -> bool {
     tokens.into_iter().any(|&t| t == token)
-}
-
-fn is_word_or_eof(t: TokenKind) -> bool {
-    if let TokenKind::Keyword(_) = t {
-        return true;
-    }
-    t == TokenKind::Ident || t == TokenKind::Eof
 }

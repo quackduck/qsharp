@@ -294,7 +294,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub(super) fn with_wildcard(input: &'a str, cursor_offset: u32) -> Self {
+    pub(crate) fn with_wildcard(input: &'a str, cursor_offset: u32) -> Self {
         Self {
             input,
             len: input
