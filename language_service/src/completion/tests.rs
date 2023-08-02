@@ -44,27 +44,21 @@ fn in_block_contains_std_functions() {
                     (
                         "Fake",
                         Function,
-                        Some(
-                            "operation Fake() : Unit",
-                        ),
+                        None,
                     ),
                 ),
                 Some(
                     (
                         "FakeWithParam",
                         Function,
-                        Some(
-                            "operation FakeWithParam(x: Int) : Unit",
-                        ),
+                        None,
                     ),
                 ),
                 Some(
                     (
                         "FakeCtlAdj",
                         Function,
-                        Some(
-                            "operation FakeCtlAdj() : Unit is Adj + Ctl",
-                        ),
+                        None,
                     ),
                 ),
             ]

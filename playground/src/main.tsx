@@ -61,9 +61,6 @@ function App(props: { katas: Kata[]; linkedCode?: string }) {
     return languageService;
   });
 
-  const languageService = getLanguageServiceWorker(languageServiceWorkerPath);
-  registerMonacoLanguageServiceProviders(languageService);
-
   const [currentNavItem, setCurrentNavItem] = useState(
     props.linkedCode ? "linked" : "Minimal"
   );

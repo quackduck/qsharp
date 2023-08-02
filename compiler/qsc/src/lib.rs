@@ -24,3 +24,10 @@ pub mod ast {
 pub use qsc_data_structures::span::Span;
 
 pub use qsc_passes::PackageType;
+
+pub mod completion {
+    pub use qsc_frontend::{
+        compile::{gather_names, GatherOptions},
+        Prediction,
+    };
+}

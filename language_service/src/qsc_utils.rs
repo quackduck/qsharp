@@ -3,6 +3,7 @@
 
 use qsc::{
     compile::{self, Error},
+    completion::Prediction,
     hir::{Item, ItemId, Package, PackageId},
     CompileUnit, PackageStore, PackageType, SourceMap, Span,
 };
