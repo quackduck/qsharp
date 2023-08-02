@@ -15,8 +15,8 @@ use super::{
 };
 use crate::{
     lex::{Delim, TokenKind},
-    predict::Prediction,
     prim::{barrier, keyword, recovering, recovering_token, shorten},
+    scan::Prediction,
     stmt::check_semis,
     ErrorKind,
 };

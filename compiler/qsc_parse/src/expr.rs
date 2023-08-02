@@ -13,9 +13,8 @@ use crate::{
         ClosedBinOp, Delim, InterpolatedEnding, InterpolatedStart, Radix, StringToken, Token,
         TokenKind,
     },
-    predict::Prediction,
     prim::{ident, keyword, opt, pat, path, seq, shorten, token},
-    scan::Scanner,
+    scan::{Prediction, Scanner},
     stmt, Error, ErrorKind, Result,
 };
 use num_bigint::BigInt;

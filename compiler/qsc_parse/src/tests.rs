@@ -178,3 +178,15 @@ fn test_completion_whitespace_at_end() {
     // a namespace follows the open keyword
     assert_eq!(format!("{:?}", v), "[Namespace]");
 }
+
+#[test]
+fn test_completion_empty_source() {
+    let input = "".to_string();
+    let cursor = 0;
+    let mut scanner = Scanner::predict_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.into_predictions();
+
+    // a namespace follows the open keyword
+    assert_eq!(format!("{:?}", v), "[Keyword(\"namespace\")]");
+}

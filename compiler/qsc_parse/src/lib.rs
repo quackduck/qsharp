@@ -19,7 +19,6 @@ mod ty;
 
 use lex::TokenKind;
 use miette::Diagnostic;
-pub use predict::Prediction;
 use qsc_ast::ast::{Expr, Namespace};
 use qsc_data_structures::span::Span;
 use scan::Scanner;
@@ -27,6 +26,7 @@ use std::result;
 use thiserror::Error;
 
 pub use item::Fragment;
+pub use scan::Prediction;
 
 #[derive(Clone, Copy, Debug, Diagnostic, Eq, Error, PartialEq)]
 #[error(transparent)]

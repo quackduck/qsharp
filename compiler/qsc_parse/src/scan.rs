@@ -4,7 +4,7 @@
 use super::Error;
 use crate::{
     lex::{Lexer, Token, TokenKind},
-    predict::{Prediction, PredictionLexer},
+    predict::CursorAwareLexer,
     ErrorKind,
 };
 use qsc_data_structures::span::Span;
@@ -12,14 +12,30 @@ use qsc_data_structures::span::Span;
 #[derive(Debug)]
 pub(super) struct NoBarrierError;
 
-enum LexerKind<'a> {
+#[derive(Clone, Debug, PartialEq)]
+pub enum Prediction {
+    Path,
+    Field,
+    Attr,
+    Namespace,
+    Qubit,
+    Ty,
+    TyParam,
+    Keyword(&'static str),
+
+    // Keep the below around just for debugging
+    Debug(String), // arbitrary debug string to stick in list
+    Other(String), // Some other token kind that we don't care about
+}
+
+enum ScannerKind<'a> {
     Normal(Lexer<'a>),
-    Predict(PredictionLexer<'a>),
+    Predict(CursorAwareLexer<'a>, Vec<Prediction>),
 }
 
 pub(super) struct Scanner<'a> {
     input: &'a str,
-    tokens: LexerKind<'a>,
+    kind: ScannerKind<'a>,
     peek: Token,
     errors: Vec<Error>,
     barriers: Vec<&'a [TokenKind]>,
@@ -32,7 +48,7 @@ impl<'a> Scanner<'a> {
         let (peek, errors) = next_ok(&mut tokens);
         Self {
             input,
-            tokens: LexerKind::Normal(tokens),
+            kind: ScannerKind::Normal(tokens),
             peek: peek.unwrap_or_else(|| eof(input.len())),
             errors: errors
                 .into_iter()
@@ -44,11 +60,11 @@ impl<'a> Scanner<'a> {
     }
 
     pub(super) fn predict_mode(input: &'a str, cursor_offset: u32) -> Self {
-        let mut tokens = PredictionLexer::new(input, cursor_offset);
+        let mut tokens = CursorAwareLexer::new(input, cursor_offset);
         let (peek, errors) = next_ok(&mut tokens);
         Self {
             input,
-            tokens: LexerKind::Predict(tokens),
+            kind: ScannerKind::Predict(tokens, Vec::new()),
             peek: peek.unwrap_or_else(|| eof(input.len())),
             errors: errors
                 .into_iter()
@@ -77,9 +93,9 @@ impl<'a> Scanner<'a> {
     pub(super) fn advance(&mut self) {
         if self.peek.kind != TokenKind::Eof {
             self.offset = self.peek.span.hi;
-            let (peek, errors) = match &mut self.tokens {
-                LexerKind::Normal(tokens) => next_ok(tokens),
-                LexerKind::Predict(tokens) => next_ok(tokens),
+            let (peek, errors) = match &mut self.kind {
+                ScannerKind::Normal(tokens) => next_ok(tokens),
+                ScannerKind::Predict(tokens, _) => next_ok(tokens),
             };
 
             self.errors
@@ -113,8 +129,8 @@ impl<'a> Scanner<'a> {
                 self.advance();
                 break;
             } else if peek == TokenKind::Eof || self.barriers.iter().any(|&b| contains(peek, b)) {
-                if let LexerKind::Predict(tokens) = &mut self.tokens {
-                    tokens.end();
+                if let ScannerKind::Predict(lexer, _) = &mut self.kind {
+                    lexer.at_cursor = false;
                 }
                 break;
             } else {
@@ -132,14 +148,18 @@ impl<'a> Scanner<'a> {
     }
 
     pub fn push_prediction(&mut self, expectations: Vec<Prediction>) {
-        if let LexerKind::Predict(tokens) = &mut self.tokens {
-            tokens.push_prediction(expectations);
+        if let ScannerKind::Predict(lexer, predictions) = &mut self.kind {
+            println!("received predictions: {:?}", expectations);
+            if lexer.at_cursor {
+                println!("at cursor, pushed predictions");
+                predictions.extend(expectations)
+            }
         }
     }
 
     pub fn into_predictions(self) -> Vec<Prediction> {
-        if let LexerKind::Predict(tokens) = self.tokens {
-            tokens.into_predictions()
+        if let ScannerKind::Predict(_, predictions) = self.kind {
+            predictions
         } else {
             panic!("expected prediction scanner")
         }
