@@ -22,10 +22,6 @@ pub enum Prediction {
     Ty,
     TyParam,
     Keyword(&'static str),
-
-    // Keep the below around just for debugging
-    Debug(String), // arbitrary debug string to stick in list
-    Other(String), // Some other token kind that we don't care about
 }
 
 enum ScannerKind<'a> {

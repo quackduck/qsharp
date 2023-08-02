@@ -86,23 +86,8 @@ impl<T, F: FnMut(&mut Scanner) -> Result<T>> Parser<T> for F {}
 
 pub fn whats_next(input: &str, cursor_offset: u32) -> Vec<Prediction> {
     let mut scanner = Scanner::predict_mode(input, cursor_offset);
-    let mut last_expected_tokens = Vec::new();
     let _ = item::parse_namespaces(&mut scanner);
-    last_expected_tokens.append(&mut scanner.into_predictions());
-
-    let mut items = vec![Prediction::Debug(format!("{}", cursor_offset))];
-    items.push(Prediction::Debug(format!("{:?}", last_expected_tokens,)));
-    // let (_, source_errors) = match parse_result {
-    //     Ok(namespaces) => (namespaces, scanner.into_errors()),
-    //     Err(error) => {
-    //         let mut errors = scanner.into_errors();
-    //         errors.push(error);
-    //         (Vec::new(), errors)
-    //     }
-    // };
-    // items.push(Prediction::Debug(format!("{:?}", source_errors,)));
-    items.extend(last_expected_tokens.into_iter());
-    items
+    scanner.into_predictions()
 }
 
 pub fn namespaces(input: &str) -> (Vec<Namespace>, Vec<Error>) {

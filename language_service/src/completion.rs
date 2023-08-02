@@ -169,18 +169,6 @@ pub(crate) fn get_completions(
                     kind: CompletionItemKind::Issue,
                 });
             }
-            qsc::Prediction::Debug(s) => {
-                items.push(CompletionItem {
-                    label: format!("~~ {s}"),
-                    kind: CompletionItemKind::Issue,
-                });
-            }
-            qsc::Prediction::Other(t) => {
-                items.push(CompletionItem {
-                    label: format!("~ {t}"),
-                    kind: CompletionItemKind::Issue,
-                });
-            }
         }
     }
 
