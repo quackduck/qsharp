@@ -4,21 +4,26 @@
 use super::Error;
 use crate::{
     lex::{Lexer, Token, TokenKind},
-    CompletionConstraint, ErrorKind,
+    predict::{Prediction, PredictionLexer},
+    ErrorKind,
 };
 use qsc_data_structures::span::Span;
 
 #[derive(Debug)]
 pub(super) struct NoBarrierError;
 
+enum LexerKind<'a> {
+    Normal(Lexer<'a>),
+    Predict(PredictionLexer<'a>),
+}
+
 pub(super) struct Scanner<'a> {
     input: &'a str,
-    tokens: Lexer<'a>,
-    barriers: Vec<&'a [TokenKind]>,
-    errors: Vec<Error>,
+    tokens: LexerKind<'a>,
     peek: Token,
-    offset: u32,
-    predictions: Option<Vec<CompletionConstraint>>,
+    errors: Vec<Error>,
+    barriers: Vec<&'a [TokenKind]>,
+    pub(super) offset: u32,
 }
 
 impl<'a> Scanner<'a> {
@@ -27,67 +32,34 @@ impl<'a> Scanner<'a> {
         let (peek, errors) = next_ok(&mut tokens);
         Self {
             input,
-            tokens,
-            barriers: Vec::new(),
+            tokens: LexerKind::Normal(tokens),
+            peek: peek.unwrap_or_else(|| eof(input.len())),
             errors: errors
                 .into_iter()
                 .map(|e| Error(ErrorKind::Lex(e)))
                 .collect(),
-            peek: peek.unwrap_or_else(|| eof(input.len())),
+            barriers: Vec::new(),
             offset: 0,
-            predictions: None,
         }
     }
 
     pub(super) fn predict_mode(input: &'a str, cursor_offset: u32) -> Self {
-        let mut tokens = Lexer::with_wildcard(input, cursor_offset);
+        let mut tokens = PredictionLexer::new(input, cursor_offset);
         let (peek, errors) = next_ok(&mut tokens);
         Self {
             input,
-            tokens,
-            barriers: Vec::new(),
+            tokens: LexerKind::Predict(tokens),
+            peek: peek.unwrap_or_else(|| eof(input.len())),
             errors: errors
                 .into_iter()
                 .map(|e| Error(ErrorKind::Lex(e)))
                 .collect(),
-            peek: peek.unwrap_or_else(|| eof(input.len())),
+            barriers: Vec::new(),
             offset: 0,
-            predictions: Some(Vec::new()),
         }
-    }
-
-    pub(super) fn push_expectation(&mut self, expectations: Vec<CompletionConstraint>) {
-        if let Some(last_expected) = &mut self.predictions {
-            println!(
-                "expecting {:?} at ({},{}] ",
-                expectations, self.offset, self.peek.span.hi
-            );
-
-            if self.peek.kind == TokenKind::Wildcard {
-                println!("  recorded");
-                last_expected.extend(expectations)
-            }
-        }
-    }
-
-    pub(super) fn last_expected(&self) -> Vec<CompletionConstraint> {
-        // avoid copy at some point... or don't, whatever, this gets called once
-        return self
-            .predictions
-            .as_ref()
-            .expect("don't call last_expected if you're not in completion mode")
-            .clone();
     }
 
     pub(super) fn peek(&self) -> Token {
-        if self.predictions.is_some() && self.peek.kind == TokenKind::Wildcard {
-            println!("returning fake eof");
-            // pretend we're at eof because we don't
-            // want the parser to find the next (valid) token
-            // and stop trying possibilities.
-            return eof(self.peek.span.lo as usize);
-        }
-        println!("peeked at {}", self.peek.kind);
         self.peek
     }
 
@@ -103,26 +75,17 @@ impl<'a> Scanner<'a> {
     }
 
     pub(super) fn advance(&mut self) {
-        print!("advancing {} -> ", self.offset);
-
         if self.peek.kind != TokenKind::Eof {
             self.offset = self.peek.span.hi;
-            let (peek, errors) = next_ok(&mut self.tokens);
+            let (peek, errors) = match &mut self.tokens {
+                LexerKind::Normal(tokens) => next_ok(tokens),
+                LexerKind::Predict(tokens) => next_ok(tokens),
+            };
+
             self.errors
                 .extend(errors.into_iter().map(|e| Error(ErrorKind::Lex(e))));
             self.peek = peek.unwrap_or_else(|| eof(self.input.len()));
         }
-        // offset is the end of the last token, peek.span.lo is the beginning of the current token
-        println!(
-            "{} ({}) {}",
-            self.offset,
-            self.peek.span.lo,
-            if self.peek.kind == TokenKind::Wildcard {
-                "wildcard!"
-            } else {
-                ""
-            }
-        );
     }
 
     /// Pushes a recovery barrier. While the barrier is active, recovery will never advance past any
@@ -150,6 +113,9 @@ impl<'a> Scanner<'a> {
                 self.advance();
                 break;
             } else if peek == TokenKind::Eof || self.barriers.iter().any(|&b| contains(peek, b)) {
+                if let LexerKind::Predict(tokens) = &mut self.tokens {
+                    tokens.end();
+                }
                 break;
             } else {
                 self.advance();
@@ -163,6 +129,20 @@ impl<'a> Scanner<'a> {
 
     pub(super) fn into_errors(self) -> Vec<Error> {
         self.errors
+    }
+
+    pub fn push_prediction(&mut self, expectations: Vec<Prediction>) {
+        if let LexerKind::Predict(tokens) = &mut self.tokens {
+            tokens.push_prediction(expectations);
+        }
+    }
+
+    pub fn into_predictions(self) -> Vec<Prediction> {
+        if let LexerKind::Predict(tokens) = self.tokens {
+            tokens.into_predictions()
+        } else {
+            panic!("expected prediction scanner")
+        }
     }
 }
 

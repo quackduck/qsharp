@@ -13,7 +13,7 @@ use super::{
 use crate::{
     lex::{ClosedBinOp, Delim, TokenKind},
     prim::keyword,
-    CompletionConstraint, ErrorKind,
+    ErrorKind, Prediction,
 };
 use qsc_ast::ast::{
     CallableKind, Functor, FunctorExpr, FunctorExprKind, Ident, NodeId, SetOp, Ty, TyKind,
@@ -83,12 +83,12 @@ fn base(s: &mut Scanner) -> Result<Ty> {
     let kind = if keyword(s, Keyword::Underscore).is_ok() {
         Ok(TyKind::Hole)
     } else if let Some(name) = {
-        s.push_expectation(vec![CompletionConstraint::TyParam]);
+        s.push_prediction(vec![Prediction::TyParam]);
         opt(s, param)?
     } {
         Ok(TyKind::Param(name))
     } else if let Some(path) = {
-        s.push_expectation(vec![CompletionConstraint::Ty]);
+        s.push_prediction(vec![Prediction::Ty]);
         opt(s, path)?
     } {
         Ok(TyKind::Path(path))

@@ -9,6 +9,7 @@ mod expr;
 mod item;
 mod keyword;
 mod lex;
+mod predict;
 mod prim;
 mod scan;
 mod stmt;
@@ -18,6 +19,7 @@ mod ty;
 
 use lex::TokenKind;
 use miette::Diagnostic;
+pub use predict::Prediction;
 use qsc_ast::ast::{Expr, Namespace};
 use qsc_data_structures::span::Span;
 use scan::Scanner;
@@ -82,42 +84,23 @@ trait Parser<T>: FnMut(&mut Scanner) -> Result<T> {}
 
 impl<T, F: FnMut(&mut Scanner) -> Result<T>> Parser<T> for F {}
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum CompletionConstraint {
-    Path,
-    Field,
-    Attr,
-    Namespace,
-    Qubit,
-    Ty,
-    TyParam,
-    Keyword(&'static str),
-
-    // Keep the below around just for debugging
-    Debug(String), // arbitrary debug string to stick in list
-    Other(String), // Some other token kind that we don't care about
-}
-
-pub fn whats_next(input: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+pub fn whats_next(input: &str, cursor_offset: u32) -> Vec<Prediction> {
     let mut scanner = Scanner::predict_mode(input, cursor_offset);
     let mut last_expected_tokens = Vec::new();
-    let parse_result = item::parse_namespaces(&mut scanner);
-    last_expected_tokens.append(&mut scanner.last_expected());
+    let _ = item::parse_namespaces(&mut scanner);
+    last_expected_tokens.append(&mut scanner.into_predictions());
 
-    let mut items = vec![CompletionConstraint::Debug(format!("{}", cursor_offset))];
-    items.push(CompletionConstraint::Debug(format!(
-        "{:?}",
-        last_expected_tokens,
-    )));
-    let (_, source_errors) = match parse_result {
-        Ok(namespaces) => (namespaces, scanner.into_errors()),
-        Err(error) => {
-            let mut errors = scanner.into_errors();
-            errors.push(error);
-            (Vec::new(), errors)
-        }
-    };
-    items.push(CompletionConstraint::Debug(format!("{:?}", source_errors,)));
+    let mut items = vec![Prediction::Debug(format!("{}", cursor_offset))];
+    items.push(Prediction::Debug(format!("{:?}", last_expected_tokens,)));
+    // let (_, source_errors) = match parse_result {
+    //     Ok(namespaces) => (namespaces, scanner.into_errors()),
+    //     Err(error) => {
+    //         let mut errors = scanner.into_errors();
+    //         errors.push(error);
+    //         (Vec::new(), errors)
+    //     }
+    // };
+    // items.push(Prediction::Debug(format!("{:?}", source_errors,)));
     items.extend(last_expected_tokens.into_iter());
     items
 }

@@ -30,7 +30,7 @@ use qsc_hir::{
     validate::Validator as HirValidator,
     visit::Visitor as _,
 };
-use qsc_parse::CompletionConstraint;
+use qsc_parse::Prediction;
 use std::{collections::HashSet, fmt::Debug, rc::Rc, sync::Arc};
 use thiserror::Error;
 
@@ -361,7 +361,7 @@ pub fn std(store: &PackageStore) -> CompileUnit {
 }
 
 #[must_use]
-pub fn whats_next(source: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+pub fn whats_next(source: &str, cursor_offset: u32) -> Vec<Prediction> {
     qsc_parse::whats_next(source, cursor_offset)
 }
 

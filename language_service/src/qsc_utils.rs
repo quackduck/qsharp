@@ -4,7 +4,7 @@
 use qsc::hir::{Package, PackageId};
 use qsc::resolve::Names;
 use qsc::typeck::Table;
-use qsc::{ast, CompletionConstraint, Span};
+use qsc::{ast, Prediction, Span};
 use qsc::{
     compile::{self, Error},
     PackageStore, SourceMap,
@@ -44,7 +44,7 @@ pub(crate) fn compile_document(source_name: &str, source_contents: &str) -> Comp
     }
 }
 
-pub(crate) fn whats_next(source: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+pub(crate) fn whats_next(source: &str, cursor_offset: u32) -> Vec<Prediction> {
     compile::whats_next(source, cursor_offset)
 }
 

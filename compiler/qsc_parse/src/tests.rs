@@ -67,7 +67,7 @@ fn test_completion_end_of_keyword() {
     let cursor = 20;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     assert_eq!(format!("{:?}", v), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
 }
@@ -78,7 +78,7 @@ fn test_completion_after_open() {
     let cursor = 21;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     // a namespace follows the open keyword
     assert_eq!(format!("{:?}", v), "[Namespace]");
@@ -90,7 +90,7 @@ fn test_completion_begin_ident() {
     let cursor = 21;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     // right at the beginning of the namespace name.
     assert_eq!(format!("{:?}", v), "[Namespace]");
@@ -102,7 +102,7 @@ fn test_completion_middle_ident() {
     let cursor = 23;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     // middle of the namespace name
     assert_eq!(format!("{:?}", v), "[Namespace]");
@@ -114,7 +114,7 @@ fn test_completion_end_ident() {
     let cursor = 25;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     // end of the namespace name
     assert_eq!(format!("{:?}", v), "[Namespace]");
@@ -126,7 +126,7 @@ fn test_completion_middle() {
     let cursor = 23;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     assert_eq!(format!("{:?}", v), "[Namespace]");
 }
@@ -138,7 +138,7 @@ fn test_completion_lotsawhitespace() {
     let cursor = 61;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     assert_eq!(format!("{:?}", v), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
 }
@@ -150,7 +150,7 @@ fn test_completion_after_semicolon() {
     let cursor = 60;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     assert_eq!(format!("{:?}", v), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
 }
@@ -162,7 +162,19 @@ fn test_completion_before_attr() {
     let cursor = 55;
     let mut scanner = Scanner::predict_mode(&input, cursor as u32);
     let _ = crate::item::parse_namespaces(&mut scanner);
-    let v = scanner.last_expected();
+    let v = scanner.into_predictions();
 
     assert_eq!(format!("{:?}", v), "[Keyword(\"internal\"), Keyword(\"open\"), Keyword(\"newtype\"), Keyword(\"function\"), Keyword(\"operation\")]");
+}
+
+#[test]
+fn test_completion_whitespace_at_end() {
+    let input = "namespace Foo { open     ".to_string();
+    let cursor = 21;
+    let mut scanner = Scanner::predict_mode(&input, cursor as u32);
+    let _ = crate::item::parse_namespaces(&mut scanner);
+    let v = scanner.into_predictions();
+
+    // a namespace follows the open keyword
+    assert_eq!(format!("{:?}", v), "[Namespace]");
 }

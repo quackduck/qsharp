@@ -13,9 +13,10 @@ use crate::{
         ClosedBinOp, Delim, InterpolatedEnding, InterpolatedStart, Radix, StringToken, Token,
         TokenKind,
     },
+    predict::Prediction,
     prim::{ident, keyword, opt, pat, path, seq, shorten, token},
     scan::Scanner,
-    stmt, CompletionConstraint, Error, ErrorKind, Result,
+    stmt, Error, ErrorKind, Result,
 };
 use num_bigint::BigInt;
 use num_traits::Num;
@@ -199,7 +200,7 @@ fn expr_base(s: &mut Scanner) -> Result<Box<Expr>> {
     } else if let Some(l) = lit(s)? {
         Ok(Box::new(ExprKind::Lit(Box::new(l))))
     } else if let Some(p) = {
-        s.push_expectation(vec![CompletionConstraint::Path]);
+        s.push_prediction(vec![Prediction::Path]);
         opt(s, path)?
     } {
         Ok(Box::new(ExprKind::Path(p)))
@@ -353,15 +354,15 @@ fn lit(s: &mut Scanner) -> Result<Option<Lit>> {
     let lexeme = s.read();
 
     // I'm sure this could be more efficient
-    s.push_expectation(vec![
-        CompletionConstraint::Keyword(Keyword::True.as_str()),
-        CompletionConstraint::Keyword(Keyword::Zero.as_str()),
-        CompletionConstraint::Keyword(Keyword::One.as_str()),
-        CompletionConstraint::Keyword(Keyword::PauliZ.as_str()),
-        CompletionConstraint::Keyword(Keyword::False.as_str()),
-        CompletionConstraint::Keyword(Keyword::PauliX.as_str()),
-        CompletionConstraint::Keyword(Keyword::PauliI.as_str()),
-        CompletionConstraint::Keyword(Keyword::PauliY.as_str()),
+    s.push_prediction(vec![
+        Prediction::Keyword(Keyword::True.as_str()),
+        Prediction::Keyword(Keyword::Zero.as_str()),
+        Prediction::Keyword(Keyword::One.as_str()),
+        Prediction::Keyword(Keyword::PauliZ.as_str()),
+        Prediction::Keyword(Keyword::False.as_str()),
+        Prediction::Keyword(Keyword::PauliX.as_str()),
+        Prediction::Keyword(Keyword::PauliI.as_str()),
+        Prediction::Keyword(Keyword::PauliY.as_str()),
     ]);
 
     let token = s.peek();
@@ -618,7 +619,7 @@ fn lambda_op(s: &mut Scanner, input: Expr, kind: CallableKind) -> Result<Box<Exp
 }
 
 fn field_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {
-    s.push_expectation(vec![CompletionConstraint::Field]);
+    s.push_prediction(vec![Prediction::Field]);
     Ok(Box::new(ExprKind::Field(lhs, ident(s)?)))
 }
 

@@ -15,6 +15,7 @@ use super::{
 };
 use crate::{
     lex::{Delim, TokenKind},
+    predict::Prediction,
     prim::{barrier, keyword, recovering, recovering_token, shorten},
     stmt::check_semis,
     ErrorKind,
@@ -141,7 +142,7 @@ fn parse_doc(s: &mut Scanner) -> String {
 fn parse_attr(s: &mut Scanner) -> Result<Box<Attr>> {
     let lo = s.peek().span.lo;
     token(s, TokenKind::At)?;
-    s.push_expectation(vec![crate::CompletionConstraint::Attr]);
+    s.push_prediction(vec![Prediction::Attr]);
     let name = ident(s)?;
     let arg = expr(s)?;
     Ok(Box::new(Attr {
@@ -164,7 +165,7 @@ fn parse_visibility(s: &mut Scanner) -> Result<Visibility> {
 
 fn parse_open(s: &mut Scanner) -> Result<Box<ItemKind>> {
     keyword(s, Keyword::Open)?;
-    s.push_expectation(vec![crate::CompletionConstraint::Namespace]);
+    s.push_prediction(vec![Prediction::Namespace]);
     let name = dot_ident(s)?;
     let alias = if keyword(s, Keyword::As).is_ok() {
         Some(dot_ident(s)?)

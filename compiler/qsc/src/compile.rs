@@ -5,7 +5,7 @@ use crate::error::WithSource;
 use miette::{Diagnostic, Report};
 use qsc_frontend::{
     compile::{CompileUnit, PackageStore, SourceMap},
-    CompletionConstraint,
+    Prediction,
 };
 use qsc_hir::hir::PackageId;
 use qsc_passes::{run_core_passes, run_default_passes};
@@ -20,7 +20,7 @@ pub enum Error {
 }
 
 #[must_use]
-pub fn whats_next(source: &str, cursor_offset: u32) -> Vec<CompletionConstraint> {
+pub fn whats_next(source: &str, cursor_offset: u32) -> Vec<Prediction> {
     qsc_frontend::compile::whats_next(source, cursor_offset)
 }
 

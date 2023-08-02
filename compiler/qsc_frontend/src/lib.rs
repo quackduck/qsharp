@@ -10,4 +10,4 @@ mod lower;
 pub mod resolve;
 pub mod typeck;
 
-pub use qsc_parse::CompletionConstraint;
+pub use qsc_parse::Prediction;

@@ -70,7 +70,7 @@ pub(crate) fn get_completions(
     // rn b/c there's only ever one file
     for completion_constraint in qsc_utils::whats_next(&source.contents, offset) {
         match completion_constraint {
-            qsc::CompletionConstraint::Path => {
+            qsc::Prediction::Path => {
                 names_added.get_or_insert_with(|| {
                     let (names, namespaces) = gather_names(
                         &compilation.package_store,
@@ -95,7 +95,7 @@ pub(crate) fn get_completions(
                     });
                 });
             }
-            qsc::CompletionConstraint::Ty => {
+            qsc::Prediction::Ty => {
                 types_added.get_or_insert_with(|| {
                     let (names, namespaces) = gather_names(
                         &compilation.package_store,
@@ -120,7 +120,7 @@ pub(crate) fn get_completions(
                     });
                 });
             }
-            qsc::CompletionConstraint::Namespace => {
+            qsc::Prediction::Namespace => {
                 let (_, namespaces) = gather_names(
                     &compilation.package_store,
                     &[compilation.std_package_id],
@@ -137,13 +137,13 @@ pub(crate) fn get_completions(
                     }
                 });
             }
-            qsc::CompletionConstraint::Qubit => {
+            qsc::Prediction::Qubit => {
                 items.push(CompletionItem {
                     label: "Qubit".to_string(),
                     kind: CompletionItemKind::Interface,
                 });
             }
-            qsc::CompletionConstraint::Keyword(keyword) => {
+            qsc::Prediction::Keyword(keyword) => {
                 if keywords_added.insert(keyword.to_string()) {
                     items.push(CompletionItem {
                         label: keyword.to_string(),
@@ -151,31 +151,31 @@ pub(crate) fn get_completions(
                     });
                 }
             }
-            qsc::CompletionConstraint::Field => {
+            qsc::Prediction::Field => {
                 items.push(CompletionItem {
                     label: "[field options]".to_string(),
                     kind: CompletionItemKind::Issue,
                 });
             }
-            qsc::CompletionConstraint::Attr => {
+            qsc::Prediction::Attr => {
                 items.push(CompletionItem {
                     label: "[attr options]".to_string(),
                     kind: CompletionItemKind::Issue,
                 });
             }
-            qsc::CompletionConstraint::TyParam => {
+            qsc::Prediction::TyParam => {
                 items.push(CompletionItem {
                     label: "[typaram options]".to_string(),
                     kind: CompletionItemKind::Issue,
                 });
             }
-            qsc::CompletionConstraint::Debug(s) => {
+            qsc::Prediction::Debug(s) => {
                 items.push(CompletionItem {
                     label: format!("~~ {s}"),
                     kind: CompletionItemKind::Issue,
                 });
             }
-            qsc::CompletionConstraint::Other(t) => {
+            qsc::Prediction::Other(t) => {
                 items.push(CompletionItem {
                     label: format!("~ {t}"),
                     kind: CompletionItemKind::Issue,

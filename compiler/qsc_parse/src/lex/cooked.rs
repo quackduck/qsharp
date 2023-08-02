@@ -141,8 +141,6 @@ pub(crate) enum TokenKind {
     String(StringToken),
     /// `~~~`
     TildeTildeTilde,
-    /// ¯\_(ツ)_/¯
-    Wildcard,
     /// `w/`
     WSlash,
     /// `w/=`
@@ -191,7 +189,6 @@ impl Display for TokenKind {
             TokenKind::Semi => f.write_str("`;`"),
             TokenKind::String(_) => f.write_str("string"),
             TokenKind::TildeTildeTilde => f.write_str("`~~~`"),
-            TokenKind::Wildcard => f.write_str("↘"),
             TokenKind::WSlash => f.write_str("`w/`"),
             TokenKind::WSlashEq => f.write_str("`w/=`"),
         }
@@ -270,15 +267,9 @@ pub(crate) enum StringToken {
 pub(crate) struct Lexer<'a> {
     input: &'a str,
     len: u32,
-    wildcard: Option<Wildcard>,
 
     // This uses a `Peekable` iterator over the raw lexer, which allows for one token lookahead.
     tokens: Peekable<raw::Lexer<'a>>,
-}
-
-struct Wildcard {
-    at_offset: u32,
-    next: Option<Token>,
 }
 
 impl<'a> Lexer<'a> {
@@ -289,29 +280,6 @@ impl<'a> Lexer<'a> {
                 .len()
                 .try_into()
                 .expect("input length should fit into u32"),
-            wildcard: None,
-            tokens: raw::Lexer::new(input).peekable(),
-        }
-    }
-
-    pub(crate) fn with_wildcard(input: &'a str, cursor_offset: u32) -> Self {
-        Self {
-            input,
-            len: input
-                .len()
-                .try_into()
-                .expect("input length should fit into u32"),
-            wildcard: Some(Wildcard {
-                at_offset: cursor_offset,
-                next: if cursor_offset == 0 {
-                    Some(Token {
-                        kind: TokenKind::Wildcard,
-                        span: Span { lo: 0, hi: 0 },
-                    })
-                } else {
-                    None
-                },
-            }),
             tokens: raw::Lexer::new(input).peekable(),
         }
     }
@@ -379,53 +347,11 @@ impl<'a> Lexer<'a> {
             }
         }?;
 
-        let lo = token.offset;
-        let hi = self.offset();
-
-        if let Some(wildcard) = &mut self.wildcard {
-            let wildcard_offset = wildcard.at_offset;
-            if lo < wildcard_offset && hi >= wildcard_offset {
-                // which token did the cursor fall into?
-                // middle or end of ident / keyword / "and" / "or" - turn token into wildcard
-                // end of other token kind - insert 0-length wildcard *after* token
-                // middle of whitespace - insert 0-length wildcard at wildcard offset
-                // middle of other - nothing
-                match kind {
-                    Some(TokenKind::Ident)
-                    | Some(TokenKind::Keyword(_))
-                    | Some(TokenKind::ClosedBinOp(ClosedBinOp::And))
-                    | Some(TokenKind::ClosedBinOp(ClosedBinOp::Or)) => {
-                        return Ok(Some(Token {
-                            kind: TokenKind::Wildcard,
-                            span: Span { lo, hi },
-                        }))
-                    }
-                    Some(_) => {
-                        if hi == wildcard_offset {
-                            // push a wildcard so we consume it next time
-                            wildcard.next = Some(Token {
-                                kind: TokenKind::Wildcard,
-                                span: Span { lo: hi, hi },
-                            });
-                        }
-                    }
-                    None => {
-                        // comment or whitespace
-                        // we need to differentiate comments, but let's move on for now
-                        return Ok(Some(Token {
-                            kind: TokenKind::Wildcard,
-                            span: Span {
-                                lo: wildcard_offset,
-                                hi: wildcard_offset,
-                            },
-                        }));
-                    }
-                }
-            }
-        }
-
         Ok(kind.map(|kind| {
-            let span = Span { lo, hi };
+            let span = Span {
+                lo: token.offset,
+                hi: self.offset(),
+            };
             Token { kind, span }
         }))
     }
@@ -573,14 +499,6 @@ impl Iterator for Lexer<'_> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Did we push a wildcard?
-        if let Some(wildcard) = &mut self.wildcard {
-            if let Some(token) = wildcard.next {
-                self.wildcard = None;
-                return Some(Ok(token));
-            }
-        }
-
         while let Some(token) = self.tokens.next() {
             match self.cook(&token) {
                 Ok(None) => {}

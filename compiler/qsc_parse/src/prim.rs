@@ -7,7 +7,7 @@ mod tests;
 use super::{keyword::Keyword, scan::Scanner, ty::ty, Error, Parser, Result};
 use crate::{
     lex::{Delim, TokenKind},
-    CompletionConstraint, ErrorKind,
+    ErrorKind, Prediction,
 };
 use qsc_ast::ast::{Ident, NodeId, Pat, PatKind, Path};
 use qsc_data_structures::span::Span;
@@ -43,7 +43,7 @@ pub(super) fn token(s: &mut Scanner, t: TokenKind) -> Result<()> {
 }
 
 pub(super) fn keyword(s: &mut Scanner, k: Keyword) -> Result<()> {
-    s.push_expectation(vec![CompletionConstraint::Keyword(k.as_str())]);
+    s.push_prediction(vec![Prediction::Keyword(k.as_str())]);
     if s.peek().kind == TokenKind::Keyword(k) {
         s.advance();
         Ok(())
