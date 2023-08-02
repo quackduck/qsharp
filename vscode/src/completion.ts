@@ -1,4 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 import { ILanguageService } from "qsharp";
 import * as vscode from "vscode";
 import { CompletionItem } from "vscode";
@@ -15,7 +17,9 @@ class QSharpCompletionItemProvider implements vscode.CompletionItemProvider {
   async provideCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     token: vscode.CancellationToken,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: vscode.CompletionContext
   ) {
     const completions = await this.languageService.getCompletions(
@@ -28,20 +32,20 @@ class QSharpCompletionItemProvider implements vscode.CompletionItemProvider {
         case "function":
           kind = vscode.CompletionItemKind.Function;
           break;
-        case "module":
-          kind = vscode.CompletionItemKind.Module;
-          break;
         case "interface":
           kind = vscode.CompletionItemKind.Interface;
           break;
         case "keyword":
           kind = vscode.CompletionItemKind.Keyword;
           break;
-        case "issue":
-          kind = vscode.CompletionItemKind.Issue;
+        case "module":
+          kind = vscode.CompletionItemKind.Module;
           break;
       }
-      return new CompletionItem(c.label, kind);
+      const item = new CompletionItem(c.label, kind);
+      item.sortText = c.sortText;
+      item.detail = c.detail;
+      return item;
     });
   }
 }

@@ -6,6 +6,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import {
   CompilerState,
+  Exercise,
+  getExerciseSources,
   ICompilerWorker,
   ILanguageServiceWorker,
   LanguageServiceEvent,
@@ -60,7 +62,7 @@ export function Editor(props: {
   compilerState: CompilerState;
   defaultShots: number;
   evtTarget: QscEventTarget;
-  kataVerify?: string;
+  kataExercise?: Exercise;
   onRestartCompiler: () => void;
   shotError?: VSDiagnostic;
   showExpr: boolean;
@@ -124,11 +126,29 @@ export function Editor(props: {
     props.evtTarget.clearResults();
 
     try {
-      if (props.kataVerify) {
-        // This is for a kata. Provide the verification code.
-        await props.compiler.runKata(code, props.kataVerify, props.evtTarget);
+      if (props.kataExercise) {
+        // This is for a kata exercise. Provide the sources that implement the solution verification.
+        const sources = await getExerciseSources(props.kataExercise);
+        await props.compiler.checkExerciseSolution(
+          code,
+          sources,
+          props.evtTarget
+        );
       } else {
+        performance.mark("compiler-run-start");
         await props.compiler.run(code, runExpr, shotCount, props.evtTarget);
+        const runTimer = performance.measure(
+          "compiler-run",
+          "compiler-run-start"
+        );
+        log.logTelemetry({
+          id: "compiler-run",
+          data: {
+            duration: runTimer.duration,
+            codeSize: code.length,
+            shotCount,
+          },
+        });
       }
     } catch (err) {
       // This could fail for several reasons, e.g. the run being cancelled.
@@ -151,12 +171,24 @@ export function Editor(props: {
     const srcModel = monaco.editor.createModel(props.code, "qsharp");
     newEditor.setModel(srcModel);
     srcModel.onDidChangeContent(() => hirRef.current());
+
+    // TODO: If the language service ever changes, this callback
+    // will be invalid as it captures the *original* props.languageService
+    // and not the updated one. Not a problem currently since the language
+    // service is never updated, but not correct either.
     srcModel.onDidChangeContent(async () => {
+      performance.mark("update-document-start");
       await props.languageService.updateDocument(
         srcModel.uri.toString(),
         srcModel.getVersionId(),
-        srcModel.getValue()
+        srcModel.getValue(),
+        !props.kataExercise // Kata exercises are always libraries
       );
+      const measure = performance.measure(
+        "update-document",
+        "update-document-start"
+      );
+      log.info(`updateDocument took ${measure.duration}ms`);
     });
 
     function onResize() {
@@ -187,11 +219,6 @@ export function Editor(props: {
       props.languageService.removeEventListener("diagnostics", onDiagnostics);
     };
   }, [props.languageService]);
-
-  useEffect(() => {
-    // Whenever the active tab changes, run check again.
-    hirRef.current();
-  }, [props.activeTab]);
 
   useEffect(() => {
     const theEditor = editor.current;

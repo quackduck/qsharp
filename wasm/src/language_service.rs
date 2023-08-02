@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use miette::{Diagnostic, Severity};
-use qsc::compile;
+use qsc::{self, compile};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Write, iter};
 use wasm_bindgen::prelude::*;
@@ -32,8 +32,17 @@ impl LanguageService {
         LanguageService(inner)
     }
 
-    pub fn update_document(&mut self, uri: &str, version: u32, text: &str) {
-        self.0.update_document(uri, version, text);
+    pub fn update_document(&mut self, uri: &str, version: u32, text: &str, is_exe: bool) {
+        self.0.update_document(
+            uri,
+            version,
+            text,
+            if is_exe {
+                qsc::PackageType::Exe
+            } else {
+                qsc::PackageType::Lib
+            },
+        );
     }
 
     pub fn close_document(&mut self, uri: &str) {
@@ -50,12 +59,13 @@ impl LanguageService {
                     label: i.label,
                     kind: (match i.kind {
                         qsls::completion::CompletionItemKind::Function => "function",
-                        qsls::completion::CompletionItemKind::Module => "module",
-                        qsls::completion::CompletionItemKind::Keyword => "keyword",
-                        qsls::completion::CompletionItemKind::Issue => "issue",
                         qsls::completion::CompletionItemKind::Interface => "interface",
+                        qsls::completion::CompletionItemKind::Keyword => "keyword",
+                        qsls::completion::CompletionItemKind::Module => "module",
                     })
                     .to_string(),
+                    sortText: i.sort_text,
+                    detail: i.detail,
                 })
                 .collect(),
         })?)
@@ -97,7 +107,9 @@ const ICompletionList: &'static str = r#"
 export interface ICompletionList {
     items: Array<{
         label: string;
-        kind: "function" | "module" | "keyword" | "issue" | "interface";
+        kind: "function" | "interface" | "keyword" | "module";
+        sortText?: string;
+        detail?: string;
     }>
 }
 "#;
@@ -108,9 +120,12 @@ pub struct CompletionList {
 }
 
 #[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)] // These types propagate to JS which expects camelCase
 pub struct CompletionItem {
     pub label: String,
+    pub sortText: Option<String>,
     pub kind: String,
+    pub detail: Option<String>,
 }
 
 #[wasm_bindgen(typescript_custom_section)]

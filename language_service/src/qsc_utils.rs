@@ -1,13 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use qsc::hir::{Package, PackageId};
-use qsc::resolve::Names;
-use qsc::typeck::Table;
-use qsc::{ast, Prediction, Span};
 use qsc::{
     compile::{self, Error},
-    PackageStore, SourceMap,
+    hir::{Item, ItemId, Package, PackageId},
+    CompileUnit, PackageStore, PackageType, SourceMap, Span,
 };
 
 /// Represents an immutable compilation state that can be used
@@ -15,31 +12,26 @@ use qsc::{
 pub(crate) struct Compilation {
     pub package_store: PackageStore,
     pub std_package_id: PackageId,
-    pub ast_package: ast::Package,
-    #[allow(dead_code)]
-    pub names: Names,
-    #[allow(dead_code)]
-    pub tys: Table,
-    pub package: Package,
-    pub source_map: SourceMap,
+    pub unit: CompileUnit,
     pub errors: Vec<Error>,
 }
 
-pub(crate) fn compile_document(source_name: &str, source_contents: &str) -> Compilation {
+pub(crate) fn compile_document(
+    source_name: &str,
+    source_contents: &str,
+    package_type: PackageType,
+) -> Compilation {
     let mut package_store = PackageStore::new(compile::core());
     let std_package_id = package_store.insert(compile::std(&package_store));
 
     // Source map only contains the current document.
     let source_map = SourceMap::new([(source_name.into(), source_contents.into())], None);
-    let (compile_unit, errors) = compile::compile(&package_store, &[std_package_id], source_map);
+    let (unit, errors) =
+        compile::compile(&package_store, &[std_package_id], source_map, package_type);
     Compilation {
         package_store,
         std_package_id,
-        ast_package: compile_unit.ast_package,
-        names: compile_unit.names,
-        tys: compile_unit.tys,
-        package: compile_unit.package,
-        source_map: compile_unit.sources,
+        unit,
         errors,
     }
 }
@@ -58,4 +50,19 @@ pub(crate) fn map_offset(source_map: &SourceMap, source_name: &str, source_offse
         .expect("source should exist in the source map")
         .offset
         + source_offset
+}
+
+pub(crate) fn find_item<'a>(
+    compilation: &'a Compilation,
+    id: &ItemId,
+) -> (Option<&'a Item>, Option<&'a Package>) {
+    let package = if let Some(package_id) = id.package {
+        match compilation.package_store.get(package_id) {
+            Some(compilation) => &compilation.package,
+            None => return (None, None),
+        }
+    } else {
+        &compilation.unit.package
+    };
+    (package.items.get(id.item), Some(package))
 }

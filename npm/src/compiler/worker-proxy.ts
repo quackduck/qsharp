@@ -15,7 +15,7 @@ import { QscEventData } from "./events.js";
 const requests: MethodMap<ICompiler> = {
   getHir: "request",
   run: "requestWithProgress",
-  runKata: "requestWithProgress",
+  checkExerciseSolution: "requestWithProgress",
 };
 
 const events: QscEventData["type"][] = ["DumpMachine", "Message", "Result"];

@@ -38,12 +38,17 @@ use thiserror::Error;
 #[derive(Debug, Default)]
 pub struct CompileUnit {
     pub package: hir::Package,
-    pub ast_package: ast::Package,
-    pub names: Names,
-    pub tys: Table,
+    pub ast: AstPackage,
     pub assigner: HirAssigner,
     pub sources: SourceMap,
     pub errors: Vec<Error>,
+}
+
+#[derive(Debug, Default)]
+pub struct AstPackage {
+    pub package: ast::Package,
+    pub tys: Table,
+    pub names: Names,
 }
 
 #[derive(Debug, Default)]
@@ -253,9 +258,11 @@ pub fn compile(
 
     CompileUnit {
         package,
-        ast_package,
-        names,
-        tys,
+        ast: AstPackage {
+            package: ast_package,
+            tys,
+            names,
+        },
         assigner: hir_assigner,
         sources,
         errors,

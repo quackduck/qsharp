@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use super::{
+    infer::Inferrer,
     rules::{self, SpecImpl},
     Error, ErrorKind, Table,
 };
@@ -10,7 +11,7 @@ use crate::{
     typeck::convert::{self, MissingTyError},
 };
 use qsc_ast::{
-    ast::{self},
+    ast::{self, NodeId},
     visit::{self, Visitor},
 };
 use qsc_data_structures::index_map::IndexMap;
@@ -57,6 +58,8 @@ impl GlobalTable {
 pub(crate) struct Checker {
     globals: HashMap<ItemId, Scheme>,
     table: Table,
+    inferrer: Inferrer,
+    new: Vec<NodeId>,
     errors: Vec<Error>,
 }
 
@@ -69,6 +72,8 @@ impl Checker {
                 terms: IndexMap::new(),
                 generics: IndexMap::new(),
             },
+            inferrer: Inferrer::new(),
+            new: Vec::new(),
             errors: globals.errors,
         }
     }
@@ -164,17 +169,22 @@ impl Checker {
         ItemCollector::new(self, names).visit_stmt(stmt);
         ItemChecker::new(self, names).visit_stmt(stmt);
 
-        // TODO: Normally, all statements in a specialization are type checked in the same inference
-        // context. However, during incremental compilation, each statement is type checked with a
-        // new inference context. This can cause issues if inference variables aren't fully solved
-        // for within each statement. Either those variables should cause an error, or the
-        // incremental compiler should be able to persist the inference context across statements.
-        // https://github.com/microsoft/qsharp/issues/205
-        self.errors.append(&mut rules::stmt(
+        self.new.append(&mut rules::stmt_fragment(
             names,
             &self.globals,
             &mut self.table,
+            &mut self.inferrer,
             stmt,
+        ));
+    }
+
+    pub(crate) fn solve(&mut self, names: &Names) {
+        self.errors.append(&mut rules::solve(
+            names,
+            &self.globals,
+            &mut self.table,
+            &mut self.inferrer,
+            std::mem::take(&mut self.new),
         ));
     }
 }
@@ -208,21 +218,28 @@ impl Visitor<'_> for ItemCollector<'_> {
                 self.checker.globals.insert(item, scheme);
             }
             ast::ItemKind::Ty(name, def) => {
+                let span = item.span;
                 let Some(&Res::Item(item)) = self.names.get(name.id) else {
                     panic!("type should have item ID");
                 };
 
-                let (base, base_errors) = convert::ast_ty_def_base(self.names, def);
                 let (cons, cons_errors) = convert::ast_ty_def_cons(self.names, item, def);
+                let (udt_def, def_errors) = convert::ast_ty_def(self.names, def);
                 self.checker.errors.extend(
-                    base_errors
+                    cons_errors
                         .into_iter()
-                        .chain(cons_errors)
+                        .chain(def_errors)
                         .map(|MissingTyError(span)| Error(ErrorKind::MissingItemTy(span))),
                 );
 
-                let fields = convert::ast_ty_def_fields(def);
-                self.checker.table.udts.insert(item, Udt { base, fields });
+                self.checker.table.udts.insert(
+                    item,
+                    Udt {
+                        name: name.name.clone(),
+                        span,
+                        definition: udt_def,
+                    },
+                );
                 self.checker.globals.insert(item, cons);
             }
             _ => {}

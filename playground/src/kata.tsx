@@ -4,13 +4,71 @@
 import { useEffect, useRef } from "preact/hooks";
 import {
   CompilerState,
+  ExplainedSolution,
   ICompilerWorker,
   ILanguageServiceWorker,
   Kata,
+  Lesson,
   QscEventTarget,
+  Question,
 } from "qsharp";
 import { Editor } from "./editor.js";
 import { OutputTabs } from "./tabs.js";
+
+function ExplainedSolutionAsHtml(solution: ExplainedSolution): string {
+  let html = `<div style="margin-left: 15px;">`;
+  html += `<h2>💡 Solution</h2>`;
+  for (const item of solution.items) {
+    switch (item.type) {
+      case "example":
+      case "solution":
+        html += `<pre><code>${item.code}</code></pre>`;
+        break;
+      case "text-content":
+        html += `<div>${item.asHtml}</div>`;
+        break;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+
+function LessonAsHtml(lesson: Lesson): string {
+  let html = "";
+  for (const item of lesson.items) {
+    switch (item.type) {
+      case "example":
+        html += `<pre><code>${item.code}</code></pre>`;
+        break;
+      case "text-content":
+        html += `<div>${item.asHtml}</div>`;
+        break;
+      case "question":
+        html += QuestionAsHtml(item);
+        break;
+    }
+  }
+  return html;
+}
+
+function QuestionAsHtml(question: Question): string {
+  let html = "<h2>❓ Question:</h2>";
+  html += `<div>${question.description.asHtml}</div>`;
+  html += "<div>";
+  html += "<h3>Answer</h3>";
+  for (const item of question.answer.items) {
+    switch (item.type) {
+      case "example":
+        html += `<pre><code>${item.code}</code></pre>`;
+        break;
+      case "text-content":
+        html += `<div>${item.asHtml}</div>`;
+        break;
+    }
+  }
+  html += "</div>";
+  return html;
+}
 
 export function Kata(props: {
   kata: Kata;
@@ -29,7 +87,9 @@ export function Kata(props: {
     lastKata.current = props.kata;
 
     // This gives an extra EventTarget we don't need for 'reading' types, but that's fine.
-    handlerMap.current = props.kata.items.map(() => new QscEventTarget(true));
+    handlerMap.current = props.kata.sections.map(
+      () => new QscEventTarget(true)
+    );
   }
   const itemEvtHandlers = handlerMap.current || [];
 
@@ -37,16 +97,38 @@ export function Kata(props: {
     // MathJax rendering inside of React components seems to mess them up a bit,
     // so we'll take control of it here and ensure the contents are replaced.
     if (!kataContent.current) return;
-    kataContent.current.innerHTML = props.kata.contentAsHtml;
 
-    props.kata.items.forEach((item, idx) => {
+    props.kata.sections.forEach((section, idx) => {
       const parentDiv = itemContent.current[idx];
-      const div = parentDiv?.querySelector(".kata-item-content");
-      if (!div) return;
-      div.innerHTML = item.contentAsHtml;
+      let titlePrefix = "🐛";
+      if (section.type === "exercise") {
+        titlePrefix = "⌨ Exercise: ";
+        const descriptionDiv = parentDiv?.querySelector(
+          ".exercise-description"
+        );
+        if (!descriptionDiv)
+          throw new Error("exercise-description div not found");
+        descriptionDiv.innerHTML = section.description.asHtml;
+        const solutionDiv = parentDiv?.querySelector(".exercise-solution");
+        if (!solutionDiv) throw new Error("exercise-solution div not found");
+        solutionDiv.innerHTML = ExplainedSolutionAsHtml(
+          section.explainedSolution
+        );
+      } else if (section.type === "lesson") {
+        titlePrefix = "📖 Lesson: ";
+        const contentDiv = parentDiv?.querySelector(".kata-text-content");
+        if (!contentDiv) throw new Error("kata-text-content div not found");
+        contentDiv.innerHTML = LessonAsHtml(section);
+      } else {
+        throw new Error(`Unexpected section`);
+      }
+
+      const titleDiv = parentDiv?.querySelector(".section-title");
+      if (!titleDiv) throw new Error("section-title div not found");
+      titleDiv.innerHTML = `<h1>${titlePrefix} <u>${section.title}</u></h1>`;
     });
     // In case we're now rendering less items than before, be sure to truncate
-    itemContent.current.length = props.kata.items.length;
+    itemContent.current.length = props.kata.sections.length;
 
     MathJax.typeset();
   }, [props.kata]);
@@ -55,52 +137,49 @@ export function Kata(props: {
     <div class="markdown-body kata-override">
       <div ref={kataContent}></div>
       <br></br>
-      {props.kata.items.map((item, idx) => {
-        if (item.type === "reading") {
+      {props.kata.sections.map((section, idx) => {
+        if (section.type === "lesson") {
           return (
             <div ref={(elem) => (itemContent.current[idx] = elem)}>
-              <div class="kata-item-content"></div>
+              <div class="section-title"></div>
+              <div class="kata-text-content"></div>
+            </div>
+          );
+        } else if (section.type === "exercise") {
+          return (
+            <div ref={(elem) => (itemContent.current[idx] = elem)}>
+              <div class="section-title"></div>
+              <div class="exercise-description"></div>
+              <div>
+                <Editor
+                  defaultShots={1}
+                  showExpr={false}
+                  showShots={false}
+                  evtTarget={itemEvtHandlers[idx]}
+                  compiler={props.compiler}
+                  compilerState={props.compilerState}
+                  onRestartCompiler={props.onRestartCompiler}
+                  code={section.placeholderCode}
+                  kataExercise={section}
+                  key={section.id}
+                  setHir={() => ({})}
+                  activeTab="results-tab"
+                  languageService={props.languageService}
+                ></Editor>
+                <OutputTabs
+                  key={section.id + "-results"}
+                  evtTarget={itemEvtHandlers[idx]}
+                  showPanel={false}
+                  kataMode={true}
+                  hir=""
+                  activeTab="results-tab"
+                  setActiveTab={() => undefined}
+                ></OutputTabs>
+              </div>
+              <div class="exercise-solution"></div>
             </div>
           );
         }
-
-        return (
-          <div>
-            <div ref={(elem) => (itemContent.current[idx] = elem)}>
-              <div class="kata-item-content"></div>
-            </div>
-            <Editor
-              defaultShots={1}
-              showExpr={false}
-              showShots={false}
-              evtTarget={itemEvtHandlers[idx]}
-              compiler={props.compiler}
-              compilerState={props.compilerState}
-              onRestartCompiler={props.onRestartCompiler}
-              code={
-                item.type === "exercise"
-                  ? item.placeholderImplementation
-                  : item.source
-              }
-              kataVerify={
-                item.type === "exercise" ? item.verificationImplementation : ""
-              }
-              key={item.id}
-              setHir={() => ({})}
-              activeTab="results-tab"
-              languageService={props.languageService}
-            ></Editor>
-            <OutputTabs
-              key={item.id + "-results"}
-              evtTarget={itemEvtHandlers[idx]}
-              showPanel={false}
-              kataMode={true}
-              hir=""
-              activeTab="results-tab"
-              setActiveTab={() => undefined}
-            ></OutputTabs>
-          </div>
-        );
       })}
     </div>
   );

@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+import { IDiagnostic } from "../../lib/node/qsc_wasm.cjs";
 import { log } from "../log.js";
-import { VSDiagnostic } from "../vsdiagnostic.js";
+import { VSDiagnostic, mapDiagnostics } from "../vsdiagnostic.js";
 import { IServiceProxy, ServiceState } from "../worker-proxy.js";
 import { eventStringToMsg } from "./common.js";
 import { IQscEventTarget, QscEvents, makeEvent } from "./events.js";
@@ -14,6 +15,10 @@ type Wasm = typeof import("../../lib/node/qsc_wasm.cjs");
 // These need to be async/promise results for when communicating across a WebWorker, however
 // for running the compiler in the same thread the result will be synchronous (a resolved promise).
 export interface ICompiler {
+  /**
+   * @deprecated use the language service for errors and other editor features.
+   */
+  checkCode(code: string): Promise<VSDiagnostic[]>;
   getHir(code: string): Promise<string>;
   run(
     code: string,
@@ -21,9 +26,9 @@ export interface ICompiler {
     shots: number,
     eventHandler: IQscEventTarget
   ): Promise<void>;
-  runKata(
+  checkExerciseSolution(
     user_code: string,
-    verify_code: string,
+    exercise_sources: string[],
     eventHandler: IQscEventTarget
   ): Promise<boolean>;
 }
@@ -32,25 +37,6 @@ export interface ICompiler {
 export type ICompilerWorker = ICompiler & IServiceProxy;
 export type CompilerState = ServiceState;
 
-function errToDiagnostic(err: any): VSDiagnostic {
-  if (
-    err &&
-    typeof err.severity === "string" &&
-    typeof err.message === "string"
-  ) {
-    err.start_pos = err.start_pos || 0;
-    err.end_pos = err.end_pos || 0;
-    return err;
-  } else {
-    return {
-      severity: "error",
-      message: err.toString(),
-      start_pos: 0,
-      end_pos: 0,
-    };
-  }
-}
-
 export class Compiler implements ICompiler {
   private wasm: Wasm;
 
@@ -58,6 +44,20 @@ export class Compiler implements ICompiler {
     log.info("Constructing a Compiler instance");
     this.wasm = wasm;
     globalThis.qscGitHash = this.wasm.git_hash();
+  }
+
+  /**
+   * @deprecated use the language service for errors and other editor features.
+   */
+  async checkCode(code: string): Promise<VSDiagnostic[]> {
+    let diags: IDiagnostic[] = [];
+    const languageService = new this.wasm.LanguageService(
+      (uri: string, version: number, errors: IDiagnostic[]) => {
+        diags = errors;
+      }
+    );
+    languageService.update_document("code", 1, code, true /* exe */);
+    return mapDiagnostics(diags, code);
   }
 
   async getHir(code: string): Promise<string> {
@@ -81,34 +81,17 @@ export class Compiler implements ICompiler {
     );
   }
 
-  async runKata(
+  async checkExerciseSolution(
     user_code: string,
-    verify_code: string,
+    exercise_sources: string[],
     eventHandler: IQscEventTarget
   ): Promise<boolean> {
-    let success = false;
-    let err: any = null;
-    try {
-      success = this.wasm.run_kata_exercise(
-        verify_code,
-        user_code,
-        (msg: string) => onCompilerEvent(msg, eventHandler)
-      );
-    } catch (e) {
-      err = e;
-    }
-    // Currently the kata wasm doesn't emit the success/failure events, so do those here.
-    if (!err) {
-      const evt = makeEvent("Result", {
-        success: true,
-        value: success.toString(),
-      });
-      eventHandler.dispatchEvent(evt);
-    } else {
-      const diag = errToDiagnostic(err);
-      const evt = makeEvent("Result", { success: false, value: diag });
-      eventHandler.dispatchEvent(evt);
-    }
+    const success = this.wasm.check_exercise_solution(
+      user_code,
+      exercise_sources,
+      (msg: string) => onCompilerEvent(msg, eventHandler)
+    );
+
     return success;
   }
 }

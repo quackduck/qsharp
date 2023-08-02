@@ -1,44 +1,23 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { ILanguageService, getLanguageService, loadWasmModule } from "qsharp";
+import {
+  ILanguageService,
+  getLanguageService,
+  loadWasmModule,
+  log,
+} from "qsharp";
 import * as vscode from "vscode";
 import { createCompletionItemProvider } from "./completion.js";
 import { createDefinitionProvider } from "./definition.js";
 import { startCheckingQSharp } from "./diagnostics.js";
 import { createHoverProvider } from "./hover.js";
 import { registerQSharpNotebookHandlers } from "./notebook.js";
+import { activateDebugger } from "./debugger/activate.js";
 
 export async function activate(context: vscode.ExtensionContext) {
-  const output = vscode.window.createOutputChannel("Q#");
-  output.appendLine("Q# extension activated.");
-
-  // Override the global logger with functions that write to the output channel
-  global.qscLog.error = (...args: unknown[]) => {
-    output.appendLine(
-      args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-    );
-  };
-  global.qscLog.warn = (...args: unknown[]) => {
-    output.appendLine(
-      args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-    );
-  };
-  global.qscLog.info = (...args: unknown[]) => {
-    output.appendLine(
-      args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-    );
-  };
-  global.qscLog.debug = (...args: unknown[]) => {
-    output.appendLine(
-      args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-    );
-  };
-  global.qscLog.trace = (...args: unknown[]) => {
-    output.appendLine(
-      args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-    );
-  };
+  initializeLogger();
+  log.info("Q# extension activating.");
 
   const languageService = await loadLanguageService(context.extensionUri);
 
@@ -74,6 +53,21 @@ export async function activate(context: vscode.ExtensionContext) {
       createDefinitionProvider(languageService)
     )
   );
+
+  activateDebugger(context);
+
+  log.info("Q# extension activated.");
+}
+
+function initializeLogger() {
+  const output = vscode.window.createOutputChannel("Q#", { log: true });
+
+  // Override the global logger with functions that write to the output channel
+  log.error = output.error;
+  log.warn = output.warn;
+  log.info = output.info;
+  log.debug = output.debug;
+  log.trace = output.trace;
 }
 
 function registerDocumentUpdateHandlers(languageService: ILanguageService) {
@@ -107,7 +101,8 @@ function registerDocumentUpdateHandlers(languageService: ILanguageService) {
       languageService.updateDocument(
         document.uri.toString(),
         document.version,
-        document.getText()
+        document.getText(),
+        true // PackageType "exe"
       );
     }
   }

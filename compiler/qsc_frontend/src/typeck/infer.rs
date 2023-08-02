@@ -15,7 +15,8 @@ use std::{
     fmt::Debug,
 };
 
-pub(super) struct Solution {
+#[derive(Debug, Default)]
+struct Solution {
     tys: IndexMap<InferTyId, Ty>,
     functors: IndexMap<InferFunctorId, FunctorSet>,
 }
@@ -175,6 +176,30 @@ impl Class {
     }
 }
 
+/// Meta-level descriptions about the source of a type.
+/// The compiler uses the notion of "unresolved types" to
+/// represent both divergent types (return expressions, similar to
+/// the `never` type), and types with insufficient information to
+/// be inferred.
+/// We want to generate compiler errors in the latter case,
+/// so we need to track where types came from. This `TySource`
+/// struct allows us to know if a type originates from a divergent
+/// source, and if it doesn't, we generate an ambiguous type error.
+pub(super) enum TySource {
+    Divergent,
+    NotDivergent { span: Span },
+}
+
+impl TySource {
+    pub(super) fn not_divergent(span: Span) -> Self {
+        TySource::NotDivergent { span }
+    }
+
+    pub(crate) fn divergent() -> TySource {
+        TySource::Divergent
+    }
+}
+
 /// An argument type and tags describing the call syntax.
 #[derive(Clone, Debug)]
 pub(super) enum ArgTy {
@@ -274,6 +299,7 @@ struct App {
     errors: Vec<Error>,
 }
 
+#[derive(Debug)]
 enum Constraint {
     Class(Class, Span),
     Eq {
@@ -289,7 +315,10 @@ enum Constraint {
 }
 
 pub(super) struct Inferrer {
+    solver: Solver,
     constraints: VecDeque<Constraint>,
+    /// Metadata about the construction of types.
+    ty_metadata: IndexMap<InferTyId, TySource>,
     next_ty: InferTyId,
     next_functor: InferFunctorId,
 }
@@ -297,9 +326,11 @@ pub(super) struct Inferrer {
 impl Inferrer {
     pub(super) fn new() -> Self {
         Self {
+            solver: Solver::new(),
             constraints: VecDeque::new(),
             next_ty: InferTyId::default(),
             next_functor: InferFunctorId::default(),
+            ty_metadata: IndexMap::default(),
         }
     }
 
@@ -318,9 +349,10 @@ impl Inferrer {
     }
 
     /// Returns a unique unconstrained type variable.
-    pub(super) fn fresh_ty(&mut self) -> Ty {
+    pub(super) fn fresh_ty(&mut self, meta: TySource) -> Ty {
         let fresh = self.next_ty;
         self.next_ty = fresh.successor();
+        self.ty_metadata.insert(fresh, meta);
         Ty::Infer(fresh)
     }
 
@@ -337,7 +369,7 @@ impl Inferrer {
             .params()
             .iter()
             .map(|param| match param {
-                GenericParam::Ty => GenericArg::Ty(self.fresh_ty()),
+                GenericParam::Ty => GenericArg::Ty(self.fresh_ty(TySource::not_divergent(span))),
                 GenericParam::Functor(expected) => {
                     let actual = self.fresh_functor();
                     self.constraints.push_back(Constraint::Superset {
@@ -358,49 +390,77 @@ impl Inferrer {
     }
 
     /// Solves for all variables given the accumulated constraints.
-    pub(super) fn solve(mut self, udts: &HashMap<ItemId, Udt>) -> (Solution, Vec<Error>) {
-        // TODO: Variables that don't have a substitution should cause errors for ambiguous types.
-        // However, if an unsolved variable is the result of a divergent expression, it may be OK to
-        // leave it or substitute it with a concrete uninhabited type.
-        // https://github.com/microsoft/qsharp/issues/152
-        let mut solver = Solver::new(udts, self.next_functor);
+    pub(super) fn solve(&mut self, udts: &HashMap<ItemId, Udt>) -> Vec<Error> {
         while let Some(constraint) = self.constraints.pop_front() {
-            for constraint in solver.constrain(constraint).into_iter().rev() {
+            for constraint in self.solver.constrain(udts, constraint).into_iter().rev() {
                 self.constraints.push_front(constraint);
             }
         }
+        let unresolved_ty_errs = self.find_unresolved_types();
+        self.solver.default_functors(self.next_functor);
+        self.solver
+            .errors
+            .drain(..)
+            .chain(unresolved_ty_errs.into_iter())
+            .collect()
+    }
 
-        solver.into_solution()
+    fn find_unresolved_types(&mut self) -> Vec<Error> {
+        self.ty_metadata
+            .drain()
+            .filter_map(|(id, meta)| {
+                if self.solver.solution.tys.get(id).is_none() {
+                    match meta {
+                        TySource::Divergent => {
+                            // here, we are resolving all divergent types to the unit type.
+                            self.solver.solution.tys.insert(id, Ty::UNIT);
+                            None
+                        }
+                        TySource::NotDivergent { span } => {
+                            Some(Error(ErrorKind::AmbiguousTy(span)))
+                        }
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub(super) fn substitute_ty(&mut self, ty: &mut Ty) {
+        substitute_ty(&self.solver.solution, ty);
+    }
+
+    pub(super) fn substitute_functor(&mut self, functors: &mut FunctorSet) {
+        substitute_functor(&self.solver.solution, functors);
     }
 }
 
-struct Solver<'a> {
-    udts: &'a HashMap<ItemId, Udt>,
-    functor_end: InferFunctorId,
+#[derive(Debug)]
+struct Solver {
     solution: Solution,
     pending_tys: HashMap<InferTyId, Vec<Class>>,
     pending_functors: HashMap<InferFunctorId, FunctorSetValue>,
     errors: Vec<Error>,
 }
 
-impl<'a> Solver<'a> {
-    fn new(udts: &'a HashMap<ItemId, Udt>, functor_end: InferFunctorId) -> Self {
+impl Solver {
+    fn new() -> Self {
         Self {
-            udts,
-            functor_end,
-            solution: Solution {
-                tys: IndexMap::new(),
-                functors: IndexMap::new(),
-            },
+            solution: Solution::default(),
             pending_tys: HashMap::new(),
             pending_functors: HashMap::new(),
             errors: Vec::new(),
         }
     }
 
-    fn constrain(&mut self, constraint: Constraint) -> Vec<Constraint> {
+    fn constrain(
+        &mut self,
+        udts: &HashMap<ItemId, Udt>,
+        constraint: Constraint,
+    ) -> Vec<Constraint> {
         match constraint {
-            Constraint::Class(class, span) => self.class(class, span),
+            Constraint::Class(class, span) => self.class(udts, class, span),
             Constraint::Eq {
                 expected,
                 actual,
@@ -417,7 +477,7 @@ impl<'a> Solver<'a> {
         }
     }
 
-    fn class(&mut self, class: Class, span: Span) -> Vec<Constraint> {
+    fn class(&mut self, udts: &HashMap<ItemId, Udt>, class: Class, span: Span) -> Vec<Constraint> {
         let unknown_dependency = class.dependencies().into_iter().any(|ty| {
             if ty == &Ty::Err {
                 true
@@ -437,7 +497,7 @@ impl<'a> Solver<'a> {
         } else {
             let (constraints, mut errors) = class
                 .map(|ty| substituted_ty(&self.solution, ty))
-                .check(self.udts, span);
+                .check(udts, span);
             self.errors.append(&mut errors);
             constraints
         }
@@ -566,9 +626,9 @@ impl<'a> Solver<'a> {
             })
     }
 
-    fn default_functors(&mut self) {
+    fn default_functors(&mut self, functor_end: InferFunctorId) {
         let mut functor = InferFunctorId::default();
-        while functor < self.functor_end {
+        while functor < functor_end {
             if !self.solution.functors.contains_key(functor) {
                 let value = self.pending_functors.remove(&functor).unwrap_or_default();
                 self.solution
@@ -579,14 +639,9 @@ impl<'a> Solver<'a> {
             functor = functor.successor();
         }
     }
-
-    fn into_solution(mut self) -> (Solution, Vec<Error>) {
-        self.default_functors();
-        (self.solution, self.errors)
-    }
 }
 
-pub(super) fn substitute_ty(solution: &Solution, ty: &mut Ty) {
+fn substitute_ty(solution: &Solution, ty: &mut Ty) {
     match ty {
         Ty::Err | Ty::Param(_) | Ty::Prim(_) | Ty::Udt(_) => {}
         Ty::Array(item) => substitute_ty(solution, item),
@@ -614,7 +669,7 @@ fn substituted_ty(solution: &Solution, mut ty: Ty) -> Ty {
     ty
 }
 
-pub(super) fn substitute_functor(solution: &Solution, functors: &mut FunctorSet) {
+fn substitute_functor(solution: &Solution, functors: &mut FunctorSet) {
     if let &mut FunctorSet::Infer(infer) = functors {
         if let Some(&new_functors) = solution.functors.get(infer) {
             *functors = new_functors;
@@ -933,7 +988,7 @@ fn check_unwrap(
             return (
                 vec![Constraint::Eq {
                     expected: base,
-                    actual: udt.base.clone(),
+                    actual: udt.get_pure_ty(),
                     span,
                 }],
                 Vec::new(),

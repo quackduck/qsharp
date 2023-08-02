@@ -7,25 +7,20 @@ pub mod compile;
 mod error;
 pub mod interpret;
 
-pub mod ast {
-    pub use qsc_ast::ast::Package;
-}
+pub use qsc_frontend::compile::{CompileUnit, PackageStore, SourceContents, SourceMap, SourceName};
 
 pub mod resolve {
-    pub use qsc_frontend::resolve::Names;
+    pub use qsc_frontend::resolve::Res;
 }
-
-pub mod typeck {
-    pub use qsc_frontend::typeck::Table;
-}
-
-pub use qsc_frontend::compile::{
-    gather_names, whats_next, GatherOptions, PackageStore, SourceContents, SourceMap, SourceName,
-};
-pub use qsc_frontend::Prediction;
 
 pub mod hir {
     pub use qsc_hir::{hir::*, *};
 }
 
+pub mod ast {
+    pub use qsc_ast::{ast::*, *};
+}
+
 pub use qsc_data_structures::span::Span;
+
+pub use qsc_passes::PackageType;

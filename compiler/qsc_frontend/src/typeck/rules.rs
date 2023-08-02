@@ -3,7 +3,7 @@
 
 use super::{
     convert,
-    infer::{self, ArgTy, Class, Inferrer},
+    infer::{ArgTy, Class, Inferrer, TySource},
     Error, Table,
 };
 use crate::resolve::{self, Names, Res};
@@ -41,19 +41,25 @@ struct Context<'a> {
     return_ty: Option<&'a Ty>,
     typed_holes: Vec<(NodeId, Span)>,
     new: Vec<NodeId>,
-    inferrer: Inferrer,
+    inferrer: &'a mut Inferrer,
 }
 
 impl<'a> Context<'a> {
-    fn new(names: &'a Names, globals: &'a HashMap<ItemId, Scheme>, table: &'a mut Table) -> Self {
+    fn new(
+        names: &'a Names,
+        globals: &'a HashMap<ItemId, Scheme>,
+        table: &'a mut Table,
+        inferrer: &'a mut Inferrer,
+        new: Vec<NodeId>,
+    ) -> Self {
         Self {
             names,
             globals,
             table,
             return_ty: None,
             typed_holes: Vec::new(),
-            new: Vec::new(),
-            inferrer: Inferrer::new(),
+            new,
+            inferrer,
         }
     }
 
@@ -92,7 +98,7 @@ impl<'a> Context<'a> {
                     }),
                 ),
             })),
-            TyKind::Hole => self.inferrer.fresh_ty(),
+            TyKind::Hole => self.inferrer.fresh_ty(TySource::not_divergent(ty.span)),
             TyKind::Paren(inner) => self.infer_ty(inner),
             TyKind::Path(path) => match self.names.get(path.id) {
                 Some(&Res::Item(item)) => Ty::Udt(hir::Res::Item(item)),
@@ -184,7 +190,9 @@ impl<'a> Context<'a> {
                     }
                     self.diverge_if(diverges, converge(Ty::Array(Box::new(first.ty))))
                 }
-                None => converge(Ty::Array(Box::new(self.inferrer.fresh_ty()))),
+                None => converge(Ty::Array(Box::new(
+                    self.inferrer.fresh_ty(TySource::not_divergent(expr.span)),
+                ))),
             },
             ExprKind::ArrayRepeat(item, size) => {
                 let item = self.infer_expr(item);
@@ -222,7 +230,7 @@ impl<'a> Context<'a> {
                     ArgTy::to_ty,
                     input,
                 );
-                let output_ty = self.inferrer.fresh_ty();
+                let output_ty = self.inferrer.fresh_ty(TySource::not_divergent(expr.span));
                 self.inferrer.class(
                     expr.span,
                     Class::Call {
@@ -246,7 +254,7 @@ impl<'a> Context<'a> {
             }
             ExprKind::Field(record, name) => {
                 let record = self.infer_expr(record);
-                let item_ty = self.inferrer.fresh_ty();
+                let item_ty = self.inferrer.fresh_ty(TySource::not_divergent(expr.span));
                 self.inferrer.class(
                     expr.span,
                     Class::HasField {
@@ -291,7 +299,7 @@ impl<'a> Context<'a> {
             ExprKind::Index(container, index) => {
                 let container = self.infer_expr(container);
                 let index = self.infer_expr(index);
-                let item_ty = self.inferrer.fresh_ty();
+                let item_ty = self.inferrer.fresh_ty(TySource::not_divergent(expr.span));
                 self.inferrer.class(
                     expr.span,
                     Class::HasIndex {
@@ -436,7 +444,7 @@ impl<'a> Context<'a> {
             }
             ExprKind::Hole => {
                 self.typed_holes.push((expr.id, expr.span));
-                converge(self.inferrer.fresh_ty())
+                converge(self.inferrer.fresh_ty(TySource::not_divergent(expr.span)))
             }
             ExprKind::Err => converge(Ty::Err),
         };
@@ -455,7 +463,7 @@ impl<'a> Context<'a> {
     ) -> Partial<T> {
         match expr.kind.as_ref() {
             ExprKind::Hole => {
-                let ty = self.inferrer.fresh_ty();
+                let ty = self.inferrer.fresh_ty(TySource::not_divergent(expr.span));
                 self.record(expr.id, ty.clone());
                 converge(hole(ty))
             }
@@ -489,7 +497,7 @@ impl<'a> Context<'a> {
                 operand
             }
             UnOp::Functor(Functor::Ctl) => {
-                let with_ctls = self.inferrer.fresh_ty();
+                let with_ctls = self.inferrer.fresh_ty(TySource::not_divergent(span));
                 self.inferrer.class(
                     span,
                     Class::Ctl {
@@ -509,7 +517,7 @@ impl<'a> Context<'a> {
                 operand
             }
             UnOp::Unwrap => {
-                let base = self.inferrer.fresh_ty();
+                let base = self.inferrer.fresh_ty(TySource::not_divergent(span));
                 self.inferrer.class(
                     span,
                     Class::Unwrap {
@@ -621,7 +629,7 @@ impl<'a> Context<'a> {
     fn infer_pat(&mut self, pat: &Pat) -> Ty {
         let ty = match &*pat.kind {
             PatKind::Bind(name, None) => {
-                let ty = self.inferrer.fresh_ty();
+                let ty = self.inferrer.fresh_ty(TySource::not_divergent(pat.span));
                 self.record(name.id, ty.clone());
                 ty
             }
@@ -630,7 +638,9 @@ impl<'a> Context<'a> {
                 self.record(name.id, ty.clone());
                 ty
             }
-            PatKind::Discard(None) | PatKind::Elided => self.inferrer.fresh_ty(),
+            PatKind::Discard(None) | PatKind::Elided => {
+                self.inferrer.fresh_ty(TySource::not_divergent(pat.span))
+            }
             PatKind::Discard(Some(ty)) => self.infer_ty(ty),
             PatKind::Paren(inner) => self.infer_pat(inner),
             PatKind::Tuple(items) => {
@@ -674,7 +684,7 @@ impl<'a> Context<'a> {
 
     fn diverge(&mut self) -> Partial<Ty> {
         Partial {
-            ty: self.inferrer.fresh_ty(),
+            ty: self.inferrer.fresh_ty(TySource::divergent()),
             diverges: true,
         }
     }
@@ -701,19 +711,19 @@ impl<'a> Context<'a> {
         self.table.terms.insert(id, ty);
     }
 
-    fn solve(self) -> Vec<Error> {
-        let (solution, mut errors) = self.inferrer.solve(&self.table.udts);
+    pub(crate) fn solve(self) -> Vec<Error> {
+        let mut errs = self.inferrer.solve(&self.table.udts);
 
         for id in self.new {
             let ty = self.table.terms.get_mut(id).expect("node should have type");
-            infer::substitute_ty(&solution, ty);
+            self.inferrer.substitute_ty(ty);
 
             if let Some(args) = self.table.generics.get_mut(id) {
                 for arg in args {
                     match arg {
-                        GenericArg::Ty(ty) => infer::substitute_ty(&solution, ty),
+                        GenericArg::Ty(ty) => self.inferrer.substitute_ty(ty),
                         GenericArg::Functor(functors) => {
-                            infer::substitute_functor(&solution, functors);
+                            self.inferrer.substitute_functor(functors);
                         }
                     }
                 }
@@ -722,10 +732,10 @@ impl<'a> Context<'a> {
 
         for (id, span) in self.typed_holes {
             let ty = self.table.terms.get_mut(id).expect("node should have type");
-            errors.push(Error(super::ErrorKind::TyHole(ty.clone(), span)));
+            errs.push(Error(super::ErrorKind::TyHole(ty.clone(), span)));
         }
 
-        errors
+        errs
     }
 }
 
@@ -744,7 +754,8 @@ pub(super) fn spec(
     table: &mut Table,
     spec: SpecImpl,
 ) -> Vec<Error> {
-    let mut context = Context::new(names, globals, table);
+    let mut inferrer = Inferrer::new();
+    let mut context = Context::new(names, globals, table, &mut inferrer, Vec::new());
     context.infer_spec(spec);
     context.solve()
 }
@@ -755,19 +766,32 @@ pub(super) fn expr(
     table: &mut Table,
     expr: &Expr,
 ) -> Vec<Error> {
-    let mut context = Context::new(names, globals, table);
+    let mut inferrer = Inferrer::new();
+    let mut context = Context::new(names, globals, table, &mut inferrer, Vec::new());
     context.infer_expr(expr);
     context.solve()
 }
 
-pub(super) fn stmt(
+pub(super) fn stmt_fragment(
     names: &Names,
     globals: &HashMap<ItemId, Scheme>,
     table: &mut Table,
+    inferrer: &mut Inferrer,
     stmt: &Stmt,
-) -> Vec<Error> {
-    let mut context = Context::new(names, globals, table);
+) -> Vec<NodeId> {
+    let mut context = Context::new(names, globals, table, inferrer, Vec::new());
     context.infer_stmt(stmt);
+    context.new
+}
+
+pub(super) fn solve(
+    names: &Names,
+    globals: &HashMap<ItemId, Scheme>,
+    table: &mut Table,
+    inferrer: &mut Inferrer,
+    new_nodes: Vec<NodeId>,
+) -> Vec<Error> {
+    let context = Context::new(names, globals, table, inferrer, new_nodes);
     context.solve()
 }
 

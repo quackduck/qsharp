@@ -13,17 +13,20 @@ import {
   getLanguageServiceWorker,
 } from "../dist/main.js";
 import { QscEventTarget } from "../dist/compiler/events.js";
-import { getKata } from "../dist/katas.js";
+import { getAllKatas, getExerciseSources, getKata } from "../dist/katas.js";
 import samples from "../dist/samples.generated.js";
 
+/** @type {import("../dist/log.js").TelemetryEvent[]} */
+const telemetryEvents = [];
 log.setLogLevel("warn");
+log.setTelemetryCollector((event) => telemetryEvents.push(event));
 
 /**
  *
  * @param {string} code
  * @param {string} expr
  * @param {boolean} useWorker
- * @returns {Promise<import("../dist/common.js").ShotResult>}
+ * @returns {Promise<import("../dist/compiler/common.js").ShotResult>}
  */
 export function runSingleShot(code, expr, useWorker) {
   return new Promise((resolve, reject) => {
@@ -66,6 +69,36 @@ namespace Test {
   assert(result.result === "Zero");
 });
 
+test("one syntax error", async () => {
+  const compiler = getCompiler();
+
+  const diags = await compiler.checkCode("namespace Foo []");
+  assert.equal(diags.length, 1);
+  assert.equal(diags[0].start_pos, 14);
+  assert.equal(diags[0].end_pos, 15);
+});
+
+test("error with newlines", async () => {
+  const compiler = getCompiler();
+
+  const diags = await compiler.checkCode(
+    "namespace input { operation Foo(a) : Unit {} }"
+  );
+  assert.equal(diags.length, 2);
+  assert.equal(diags[0].start_pos, 32);
+  assert.equal(diags[0].end_pos, 33);
+  assert.equal(diags[1].start_pos, 32);
+  assert.equal(diags[1].end_pos, 33);
+  assert.equal(
+    diags[1].message,
+    "type error: insufficient type information to infer type\n\nhelp: provide a type annotation"
+  );
+  assert.equal(
+    diags[0].message,
+    "type error: missing type in item signature\n\nhelp: types cannot be inferred for global declarations"
+  );
+});
+
 test("dump and message output", async () => {
   let code = `namespace Test {
         function Answer() : Int {
@@ -85,74 +118,144 @@ test("dump and message output", async () => {
   assert(result.events[1].message == "hello, qsharp");
 });
 
-test("kata success", async () => {
+async function runExerciseSolutionCheck(exercise, solution) {
   const evtTarget = new QscEventTarget(true);
   const compiler = getCompiler();
-  const code = `
-namespace Kata {
-  operation ApplyY(q : Qubit) : Unit is Adj + Ctl {
-    Y(q);
+  const sources = await getExerciseSources(exercise);
+  const success = await compiler.checkExerciseSolution(
+    solution,
+    sources,
+    evtTarget
+  );
+
+  const unsuccessful_events = evtTarget
+    .getResults()
+    .filter((evt) => !evt.success);
+  let errorMsg = "";
+  for (const event of unsuccessful_events) {
+    const error = event.result;
+    if (typeof error === "string") {
+      errorMsg += "Result = " + error + "\n";
+    } else {
+      errorMsg += "Message = " + error.message + "\n";
+    }
   }
-}`;
-  const theKata = await getKata("single_qubit_gates");
-  const firstExercise = theKata.items[0];
 
-  assert(firstExercise.type === "exercise");
-  const verifyCode = firstExercise.verificationImplementation;
+  return {
+    success: success,
+    errorCount: unsuccessful_events.length,
+    errorMsg: errorMsg,
+  };
+}
 
-  const passed = await compiler.runKata(code, verifyCode, evtTarget);
-  const results = evtTarget.getResults();
+async function validateExercise(
+  exercise,
+  validatePlaceholder,
+  validateSolutions
+) {
+  // Validate the correctness of the placeholder code.
+  if (validatePlaceholder) {
+    const placeholderResult = await runExerciseSolutionCheck(
+      exercise,
+      exercise.placeholderCode
+    );
 
-  assert(results.length === 1);
-  assert(results[0].events.length === 4);
-  assert(passed);
+    // Check that there are no compilation or runtime errors.
+    assert(
+      placeholderResult.errorCount === 0,
+      `Placeholder for exercise "${exercise.id}" has compilation or runtime errors` +
+        `Compilation and runtime errors:\n${placeholderResult.errorMsg}`
+    );
+
+    // Check that the placeholder is an incorrect solution.
+    assert(
+      !placeholderResult.success,
+      `Placeholder for exercise "${exercise.id}" is a correct solution but it is expected to be an incorrect solution`
+    );
+  }
+
+  // Validate the correctness of the solutions.
+  if (validateSolutions) {
+    const solutions = exercise.explainedSolution.items.filter(
+      (item) => item.type === "solution"
+    );
+
+    // Check that the exercise has at least one solution.
+    assert(
+      solutions.length > 0,
+      `Exercise "${exercise.id}" does not have solutions`
+    );
+
+    // Check that the solutions are correct.
+    for (const solution of solutions) {
+      const solutionResult = await runExerciseSolutionCheck(
+        exercise,
+        solution.code
+      );
+
+      // Check that there are no compilation or runtime errors.
+      assert(
+        solutionResult.errorCount === 0,
+        `Solution "${solution.id}" for exercise "${exercise.id}" has compilation or runtime errors` +
+          `Compilation and runtime errors:\n${solutionResult.errorMsg}`
+      );
+
+      // Check that the solution is correct.
+      assert(
+        solutionResult.success,
+        `Solution "${solution.id}" for exercise "${exercise.id}" is incorrect`
+      );
+    }
+  }
+}
+
+async function validateKata(
+  kata,
+  validateExercisePlaceholder,
+  validateExerciseSolutions
+) {
+  // Validate the correctness of Q# code related to exercises.
+  const exercises = kata.sections.filter(
+    (section) => section.type === "exercise"
+  );
+  for (const exercise of exercises) {
+    await validateExercise(
+      exercise,
+      validateExercisePlaceholder,
+      validateExerciseSolutions
+    );
+  }
+}
+
+test("all katas work", async () => {
+  const katas = await getAllKatas();
+  // N.B. If you update the expected katas count, make sure to add a validation test for your newly added kata.
+  const expectedKatasCount = 4;
+  assert.equal(
+    katas.length,
+    expectedKatasCount,
+    `Expected ${expectedKatasCount} katas, but found ${katas.length} katas`
+  );
 });
 
-test("kata incorrect", async () => {
-  const evtTarget = new QscEventTarget(true);
-  const compiler = getCompilerWorker();
-  const code = `
-namespace Kata {
-  operation ApplyY(q : Qubit) : Unit is Adj + Ctl {
-    Z(q);
-  }
-}`;
-  const theKata = await getKata("single_qubit_gates");
-  const firstExercise = theKata.items[0];
-  assert(firstExercise.type === "exercise");
-  const verifyCode = firstExercise.verificationImplementation;
-
-  const passed = await compiler.runKata(code, verifyCode, evtTarget);
-  const results = evtTarget.getResults();
-  compiler.terminate();
-
-  assert(results.length === 1);
-  assert(results[0].events.length === 6);
-  assert(!passed);
+test("qubit kata is valid", async () => {
+  const kata = await getKata("qubit");
+  await validateKata(kata, true, true);
 });
 
-test("kata syntax error", async () => {
-  const evtTarget = new QscEventTarget(true);
-  const compiler = getCompiler();
-  const code = `
-namespace Kata {
-  operaion ApplyY(q : Qubit) : Unt is Adj + Ctl {
-    Z(q);
-  }
-}`;
-  const theKata = await getKata("single_qubit_gates");
-  const firstExercise = theKata.items[0];
-  assert(firstExercise.type === "exercise");
-  const verifyCode = firstExercise.verificationImplementation;
+test("single_qubit_gates kata is valid", async () => {
+  const kata = await getKata("single_qubit_gates");
+  await validateKata(kata, true, true);
+});
 
-  await compiler.runKata(code, verifyCode, evtTarget);
-  const results = evtTarget.getResults();
+test("multi_qubit_gates kata is valid", async () => {
+  const kata = await getKata("multi_qubit_gates");
+  await validateKata(kata, true, true);
+});
 
-  assert.equal(results.length, 1);
-  assert.equal(results[0].events.length, 0);
-  assert(!results[0].success);
-  assert(typeof results[0].result !== "string");
-  assert.equal(results[0].result.message, "Error: syntax error");
+test("random_numbers kata is valid", async () => {
+  const kata = await getKata("random_numbers");
+  await validateKata(kata, true, true);
 });
 
 test("worker 100 shots", async () => {
@@ -267,6 +370,15 @@ test("cancel worker", () => {
   });
 });
 
+test("check code", async () => {
+  const compiler = getCompiler();
+
+  const diags = await compiler.checkCode("namespace Foo []");
+  assert.equal(diags.length, 1);
+  assert.equal(diags[0].start_pos, 14);
+  assert.equal(diags[0].end_pos, 15);
+});
+
 test("language service diagnostics", async () => {
   const languageService = getLanguageService();
   let gotDiagnostics = false;
@@ -289,7 +401,8 @@ test("language service diagnostics", async () => {
         let m1 = M(q1);
         return [m1];
     }
-}`
+}`,
+    true // PackageType "exe"
   );
   assert(gotDiagnostics);
 });
@@ -316,7 +429,8 @@ test("language service diagnostics - web worker", async () => {
         let m1 = M(q1);
         return [m1];
     }
-}`
+}`,
+    true // PackageType "exe"
   );
   languageService.terminate();
   assert(gotDiagnostics);
