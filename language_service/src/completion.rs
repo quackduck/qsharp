@@ -137,12 +137,6 @@ pub(crate) fn get_completions(
                     }
                 });
             }
-            qsc::Prediction::Qubit => {
-                items.push(CompletionItem {
-                    label: "Qubit".to_string(),
-                    kind: CompletionItemKind::Interface,
-                });
-            }
             qsc::Prediction::Keyword(keyword) => {
                 if keywords_added.insert(keyword.to_string()) {
                     items.push(CompletionItem {
@@ -151,15 +145,22 @@ pub(crate) fn get_completions(
                     });
                 }
             }
-            qsc::Prediction::Field => {
+            qsc::Prediction::Qubit => {
                 items.push(CompletionItem {
-                    label: "[field options]".to_string(),
-                    kind: CompletionItemKind::Issue,
+                    label: "Qubit".to_string(),
+                    kind: CompletionItemKind::Interface,
                 });
             }
             qsc::Prediction::Attr => {
                 items.push(CompletionItem {
-                    label: "[attr options]".to_string(),
+                    // Only known attribute is EntryPoint
+                    label: "EntryPoint".to_string(),
+                    kind: CompletionItemKind::Issue,
+                });
+            }
+            qsc::Prediction::Field => {
+                items.push(CompletionItem {
+                    label: "[field options]".to_string(),
                     kind: CompletionItemKind::Issue,
                 });
             }

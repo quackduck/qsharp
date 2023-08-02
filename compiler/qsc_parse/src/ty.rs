@@ -55,6 +55,7 @@ pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
 
 pub(super) fn param(s: &mut Scanner) -> Result<Box<Ident>> {
     token(s, TokenKind::Apos)?;
+    s.push_prediction(vec![Prediction::TyParam]);
     ident(s)
 }
 
@@ -82,10 +83,7 @@ fn base(s: &mut Scanner) -> Result<Ty> {
     let lo = s.peek().span.lo;
     let kind = if keyword(s, Keyword::Underscore).is_ok() {
         Ok(TyKind::Hole)
-    } else if let Some(name) = {
-        s.push_prediction(vec![Prediction::TyParam]);
-        opt(s, param)?
-    } {
+    } else if let Some(name) = { opt(s, param)? } {
         Ok(TyKind::Param(name))
     } else if let Some(path) = {
         s.push_prediction(vec![Prediction::Ty]);
