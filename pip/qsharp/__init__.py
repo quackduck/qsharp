@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from ._qsharp import interpret, interpret_file, eval_with_shots
+from ._qsharp import eval, eval_file, eval_with_shots
 
 from ._native import Result, Pauli, QSharpError
 
@@ -17,8 +17,8 @@ except NameError:
 
 
 __all__ = [
-    "interpret",
-    "interpret_file",
+    "eval",
+    "eval_file",
     "eval_with_shots",
     "Result",
     "Pauli",
