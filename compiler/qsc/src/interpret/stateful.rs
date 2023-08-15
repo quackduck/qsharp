@@ -15,9 +15,8 @@ use miette::Diagnostic;
 use num_bigint::BigUint;
 use num_complex::Complex;
 use qsc_data_structures::index_map::IndexMap;
-use qsc_eval::backend::Backend;
 use qsc_eval::{
-    backend::SparseSim,
+    backend::{Backend, SparseSim},
     debug::{map_fir_package_to_hir, map_hir_package_to_fir, Frame},
     eval_stmt,
     output::Receiver,
@@ -350,6 +349,31 @@ impl Interpreter {
     ) -> Result<Value, Vec<LineError>> {
         let mut result = Value::unit();
 
+        let stmt_ids = self.compile_to_stmts(line)?;
+
+        for stmt_id in stmt_ids {
+            match self.eval_stmt(receiver, stmt_id) {
+                Ok(value) => result = value,
+                Err((error, call_stack)) => {
+                    let stack_trace = if call_stack.is_empty() {
+                        None
+                    } else {
+                        Some(self.render_call_stack(call_stack, &error))
+                    };
+
+                    return Err(vec![LineError(WithSource::new(
+                        line.into(),
+                        error.into(),
+                        stack_trace,
+                    ))]);
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    fn compile_to_stmts(&mut self, line: &str) -> Result<Vec<StmtId>, Vec<LineError>> {
         let mut fragments = self.compiler.compile_fragments(line).map_err(|errors| {
             let source = line.into();
             errors
@@ -357,7 +381,6 @@ impl Interpreter {
                 .map(|error| LineError(WithSource::new(Arc::clone(&source), error.into(), None)))
                 .collect::<Vec<_>>()
         })?;
-
         let pass_errors = fragments
             .iter_mut()
             .flat_map(|fragment| {
@@ -372,7 +395,7 @@ impl Interpreter {
                 .map(|error| LineError(WithSource::new(Arc::clone(&source), error.into(), None)))
                 .collect());
         }
-
+        let mut stmt_ids = Vec::new();
         for fragment in fragments {
             match fragment {
                 Fragment::Item(item) => match item.kind {
@@ -390,28 +413,88 @@ impl Interpreter {
                 },
                 Fragment::Stmt(stmt) => {
                     let stmt_id = self.lower_stmt(&stmt);
-
-                    match self.eval_stmt(receiver, stmt_id) {
-                        Ok(value) => result = value,
-                        Err((error, call_stack)) => {
-                            let stack_trace = if call_stack.is_empty() {
-                                None
-                            } else {
-                                Some(self.render_call_stack(call_stack, &error))
-                            };
-
-                            return Err(vec![LineError(WithSource::new(
-                                line.into(),
-                                error.into(),
-                                stack_trace,
-                            ))]);
-                        }
-                    }
+                    stmt_ids.push(stmt_id);
                 }
             }
         }
+        Ok(stmt_ids)
+    }
 
-        Ok(result)
+    /// # Errors
+    /// Yep
+    /// # Panics
+    /// If internal compiler state is inconsistent, a panic may occur.
+    pub fn eval_with_shots(
+        &mut self,
+        receiver: &mut impl Receiver,
+        expr: &str,
+        shots: u32,
+    ) -> Result<Vec<Result<Value, Vec<LineError>>>, Vec<LineError>> {
+        let mut fragment = self.compiler.compile_expr(expr).map_err(|errors| {
+            let source = expr.into();
+            errors
+                .into_iter()
+                .map(|error| LineError(WithSource::new(Arc::clone(&source), error.into(), None)))
+                .collect::<Vec<_>>()
+        })?;
+
+        let pass_errors = self.passes.run(
+            self.store.core(),
+            self.compiler.assigner_mut(),
+            &mut fragment,
+        );
+        if !pass_errors.is_empty() {
+            let source = expr.into();
+            return Err(pass_errors
+                .into_iter()
+                .map(|error| LineError(WithSource::new(Arc::clone(&source), error.into(), None)))
+                .collect());
+        }
+
+        let Fragment::Stmt(stmt) = fragment else {
+            panic!("only a stmt fragment should reach here.")
+        };
+
+        let stmt_id = self.lower_stmt(&stmt);
+
+        let globals = Lookup {
+            fir_store: &self.fir_store,
+            package: self.package,
+            udts: &self.udts,
+            callables: &self.callables,
+        };
+
+        let mut results: Vec<Result<Value, Vec<LineError>>> = Vec::new();
+
+        for _i in 0..shots {
+            results.push(
+                match eval_stmt(
+                    stmt_id,
+                    &globals,
+                    &mut Env::with_empty_scope(),
+                    &mut SparseSim::new(),
+                    self.package,
+                    receiver,
+                ) {
+                    Ok(value) => Ok(value),
+                    Err((error, call_stack)) => {
+                        let stack_trace = if call_stack.is_empty() {
+                            None
+                        } else {
+                            Some(self.render_call_stack(call_stack, &error))
+                        };
+
+                        Err(vec![LineError(WithSource::new(
+                            expr.into(),
+                            error.into(),
+                            stack_trace,
+                        ))])
+                    }
+                },
+            );
+        }
+
+        Ok(results)
     }
 
     fn lower_callable_decl(&mut self, callable: &qsc_hir::hir::CallableDecl) -> CallableDecl {

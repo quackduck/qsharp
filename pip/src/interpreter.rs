@@ -76,6 +76,34 @@ impl Interpreter {
             Err(errors) => Err(QSharpError::new_err(format_errors(input, errors))),
         }
     }
+
+    #[allow(clippy::unused_self)]
+    #[allow(clippy::unnecessary_wraps)]
+    fn eval_with_shots(
+        &mut self,
+        py: Python,
+        entry_expr: &str,
+        shots: u32,
+        callback: Option<PyObject>,
+    ) -> PyResult<Py<PyList>> {
+        let mut receiver = OptionalCallbackReceiver { callback, py };
+        match self
+            .interpreter
+            .eval_with_shots(&mut receiver, entry_expr, shots)
+        {
+            Ok(results) => Ok(PyList::new(
+                py,
+                results.into_iter().map(|res| match res {
+                    Ok(v) => ValueWrapper(v).into_py(py),
+                    Err(errors) => {
+                        QSharpError::new_err(format_errors(entry_expr, errors)).into_py(py)
+                    }
+                }),
+            )
+            .into_py(py)),
+            Err(errors) => Err(QSharpError::new_err(format_errors(entry_expr, errors))),
+        }
+    }
 }
 
 create_exception!(

@@ -22,6 +22,7 @@ class Interpreter:
         :raises QSharpError: If there is an error interpreting the input.
         """
         ...
+    def eval_with_shots(self, entry_expr: str, shots: int, output_fn: Callable[[Output], None]) -> Any: ...
 
 class Result(Enum):
     """

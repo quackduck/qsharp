@@ -9,7 +9,7 @@ use crate::{
     mut_visit::{self, MutVisitor},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Assigner {
     next_id: NodeId,
 }

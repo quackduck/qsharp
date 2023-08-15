@@ -34,3 +34,11 @@ def interpret_file(path) -> None:
     """
     f = open(path, mode="r", encoding="utf-8")
     return interpret(f.read())
+
+
+def eval_with_shots(entry_expr, shots) -> None:
+
+    def callback(output):
+        print(output)
+
+    return _interpreter.eval_with_shots(entry_expr, shots, callback)

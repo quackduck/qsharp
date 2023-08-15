@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from ._qsharp import interpret, interpret_file
+from ._qsharp import interpret, interpret_file, eval_with_shots
 
 from ._native import Result, Pauli, QSharpError
 
@@ -16,4 +16,11 @@ except NameError:
     pass
 
 
-__all__ = ["interpret", "interpret_file", "Result", "Pauli", "QSharpError"]
+__all__ = [
+    "interpret",
+    "interpret_file",
+    "eval_with_shots",
+    "Result",
+    "Pauli",
+    "QSharpError",
+]
