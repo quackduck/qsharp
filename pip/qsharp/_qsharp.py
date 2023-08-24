@@ -47,7 +47,7 @@ def eval(source):
     return get_interpreter().interpret(source, callback)
 
 
-def eval_file(path) -> None:
+def eval_file(path):
     """
     Reads Q# source code from a file and evaluates it.
 
@@ -59,7 +59,19 @@ def eval_file(path) -> None:
     return eval(f.read())
 
 
-def eval_with_shots(entry_expr, shots) -> None:
+def run(entry_expr, shots):
+    """
+    Runs the given Q# expressin for the given number of shots.
+    Each shot uses an independent instance of the simulator.
+
+    :param entry_expr: The entry expression.
+    :param shots: The number of shots to run.
+
+    :returns values: A list of results or runtime errors.
+
+    :raises QSharpError: If there is an error interpreting the input.
+    """
+
     def callback(output):
         print(output)
 

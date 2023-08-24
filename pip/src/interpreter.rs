@@ -107,10 +107,7 @@ impl Interpreter {
         callback: Option<PyObject>,
     ) -> PyResult<Py<PyList>> {
         let mut receiver = OptionalCallbackReceiver { callback, py };
-        match self
-            .interpreter
-            .eval_with_shots(&mut receiver, entry_expr, shots)
-        {
+        match self.interpreter.run(&mut receiver, entry_expr, shots) {
             Ok(results) => Ok(PyList::new(
                 py,
                 results.into_iter().map(|res| match res {

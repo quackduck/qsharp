@@ -428,11 +428,15 @@ impl Interpreter {
         Ok(stmt_ids)
     }
 
+    /// Runs the given entry expression on a new instance of the environment and simulator,
+    /// but using the current compilation.
     /// # Errors
-    /// Yep
+    /// If the parsing of the expr fails, an error is returned.
+    /// If the compilation of the expr fails, an error is returned.
+    /// If there is a runtime error when generating code for the expr, an error is returned.
     /// # Panics
     /// If internal compiler state is inconsistent, a panic may occur.
-    pub fn eval_with_shots(
+    pub fn run(
         &mut self,
         receiver: &mut impl Receiver,
         expr: &str,
