@@ -75,7 +75,7 @@ def run(entry_expr, shots):
     def callback(output):
         print(output)
 
-    return _interpreter.eval_with_shots(entry_expr, shots, callback)
+    return _interpreter.run(entry_expr, shots, callback)
 
 
 def compile(entry_expr):

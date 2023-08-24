@@ -99,7 +99,7 @@ impl Interpreter {
 
     #[allow(clippy::unused_self)]
     #[allow(clippy::unnecessary_wraps)]
-    fn eval_with_shots(
+    fn run(
         &mut self,
         py: Python,
         entry_expr: &str,
