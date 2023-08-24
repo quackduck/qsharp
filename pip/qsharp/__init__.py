@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from ._qsharp import eval, eval_file, eval_with_shots
+from ._qsharp import init, eval, eval_file, eval_with_shots, compile
 
-from ._native import Result, Pauli, QSharpError
+from ._native import Result, Pauli, QSharpError, TargetProfile
 
 # IPython notebook specific features
 try:
@@ -17,10 +17,13 @@ except NameError:
 
 
 __all__ = [
+    "init",
     "eval",
     "eval_file",
     "eval_with_shots",
+    "compile",
     "Result",
     "Pauli",
     "QSharpError",
+    "TargetProfile",
 ]
