@@ -3,6 +3,8 @@
 
 from ._native import Interpreter, TargetProfile
 
+import subprocess
+
 _interpreter = None
 
 
@@ -102,9 +104,36 @@ class QirInputData:
 
     def __init__(self, name: str, ll_str: str):
         self._name = name
-        self._ll_str = ll_str
+        # Write ll to file
+        file = open(interim_ll_path, "w")
+        file.write(ll_str)
+        file.close()
+        # Make .bc
+        child = subprocess.Popen(
+            [
+                "C:\\temp\\qat.exe",
+                "--apply",
+                "--always-inline",
+                "--no-disable-record-output-support",
+                "--entry-point-attr",
+                "entry_point",
+                interim_ll_path,
+                "C:\\src\\qsharp\\compiler\\qsc_codegen\\src\\qir_base\\decomp.ll",
+                "-o",
+                interim_bc_path,
+            ]
+        )
+        if child.wait() != 0:
+            raise Exception(f"Linking failed: '{child.returncode}'")
+        bc_file = open(interim_bc_path, "rb")
+        bc = bc_file.read()
+        self.bc = bc
 
     # The name of this method is defined
     # by the protocol and must remain unchanged.
     def _repr_qir_(self, **kwargs) -> bytes:
-        return self._ll_str.encode("utf-8")
+        return self.bc
+
+
+interim_ll_path = "C:\\temp\\interim.ll"
+interim_bc_path = "C:\\temp\\interim.bc"
