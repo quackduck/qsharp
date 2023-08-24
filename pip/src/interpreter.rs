@@ -121,6 +121,7 @@ impl Interpreter {
                 }),
             )
             .into_py(py)),
+            Err(errors) => Err(QSharpError::new_err(format_errors(entry_expr, errors))),
         }
     }
 
