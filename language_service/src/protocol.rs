@@ -30,6 +30,20 @@ pub struct Range {
     pub end: Position,
 }
 
+pub struct Diagnostic {
+    pub range: Range,
+    pub severity: DiagnosticSeverity,
+    pub code: Option<String>,
+    pub message: String,
+}
+
+pub enum DiagnosticSeverity {
+    Error,
+    Warning,
+    Information,
+    Hint,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(clippy::module_name_repetitions)]
 pub enum CompletionItemKind {
