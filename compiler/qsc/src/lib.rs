@@ -27,6 +27,10 @@ pub mod ast {
 
 pub use qsc_data_structures::span::Span;
 
+pub mod utf16 {
+    pub use qsc_data_structures::utf16::{Position, PositionEncoding};
+}
+
 pub use qsc_frontend::compile::TargetProfile;
 
 pub use qsc_passes::PackageType;

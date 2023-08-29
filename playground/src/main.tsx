@@ -283,19 +283,18 @@ function registerMonacoLanguageServiceProviders(
     ) => {
       const definition = await languageService.getDefinition(
         model.uri.toString(),
-        model.getOffsetAt(position)
+        { line: position.lineNumber - 1, character: position.column - 1 }
       );
       if (!definition) return null;
       const uri = monaco.Uri.parse(definition.source);
       if (uri.toString() !== model.uri.toString()) return null;
-      const definitionPosition = model.getPositionAt(definition.offset);
       return {
         uri,
         range: {
-          startLineNumber: definitionPosition.lineNumber,
-          startColumn: definitionPosition.column,
-          endLineNumber: definitionPosition.lineNumber,
-          endColumn: definitionPosition.column + 1,
+          startLineNumber: definition.position.line + 1,
+          startColumn: definition.position.character + 1,
+          endLineNumber: definition.position.line + 1,
+          endColumn: definition.position.character + 2, // TODO: language service should return whole spans
         },
       };
     },

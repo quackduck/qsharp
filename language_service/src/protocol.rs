@@ -1,6 +1,28 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use qsc::utf16::{Position as utf16_Position, PositionEncoding as utf16_PositionEncoding};
+
+#[derive(Debug, PartialEq)]
+pub enum Position {
+    /// Line and column are both 0-indexed
+    /// Column offset in terms of utf-16 code units (i.e. 2-byte units)
+    Utf16LineColumn(utf16_Position),
+    /// Offset in terms of utf-8 code units (bytes)
+    Utf8Offset(u32),
+}
+
+impl Position {
+    #[must_use]
+    pub fn utf16_line_column(line: u32, column: u32) -> Self {
+        Position::Utf16LineColumn(utf16_Position {
+            encoding: utf16_PositionEncoding::Utf16,
+            line,
+            column,
+        })
+    }
+}
+
 /// Represents a span of text used by the Language Server API
 #[derive(Debug, PartialEq)]
 pub struct Span {
@@ -52,7 +74,7 @@ impl CompletionItem {
 #[derive(Debug, PartialEq)]
 pub struct Definition {
     pub source: String,
-    pub offset: u32,
+    pub position: Position,
 }
 
 #[derive(Debug, PartialEq)]

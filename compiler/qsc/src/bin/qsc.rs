@@ -5,7 +5,7 @@
 
 use clap::{crate_version, ArgGroup, Parser, ValueEnum};
 use log::info;
-use miette::{Context, IntoDiagnostic, Report};
+use miette::{Context, Diagnostic, IntoDiagnostic, Report};
 use qsc::compile::compile;
 use qsc_codegen::qir_base;
 use qsc_frontend::compile::{PackageStore, SourceContents, SourceMap, SourceName, TargetProfile};
@@ -98,6 +98,12 @@ fn main() -> miette::Result<ExitCode> {
         Ok(ExitCode::SUCCESS)
     } else {
         for error in errors {
+            eprintln!(
+                "error offset at {:?}",
+                error
+                    .labels()
+                    .map_or(0, |mut l| l.next().map_or(0, |l| l.offset()))
+            );
             if let Some(source) = unit.sources.find_by_diagnostic(&error) {
                 eprintln!("{:?}", Report::new(error).with_source_code(source.clone()));
             } else {

@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use log::trace;
-use protocol::{CompletionList, Definition, Hover};
+use protocol::{CompletionList, Definition, Hover, Position};
 use qsc::PackageType;
 use qsc_utils::Compilation;
 
@@ -22,11 +22,19 @@ mod qsc_utils;
 mod test_utils;
 
 pub struct LanguageService<'a> {
+    /// Whenever responses contain a position, use this encoding
+    position_encoding_kind: PositionEncodingKind,
     /// Associate each known document with a separate compilation.
     document_map: HashMap<String, DocumentState>,
     /// Callback which will receive diagnostics (compilation errors)
     /// whenever a (re-)compilation occurs.
     diagnostics_receiver: Box<DiagnosticsReceiver<'a>>,
+}
+
+#[derive(Copy, Clone)]
+pub enum PositionEncodingKind {
+    Utf8Offset,
+    Utf16LineColumn,
 }
 
 struct DocumentState {
@@ -42,8 +50,12 @@ struct DocumentState {
 type DiagnosticsReceiver<'a> = dyn FnMut(&str, u32, &[qsc::compile::Error]) + 'a;
 
 impl<'a> LanguageService<'a> {
-    pub fn new(diagnostics_receiver: impl FnMut(&str, u32, &[qsc::compile::Error]) + 'a) -> Self {
+    pub fn new(
+        position_encoding_kind: PositionEncodingKind,
+        diagnostics_receiver: impl FnMut(&str, u32, &[qsc::compile::Error]) + 'a,
+    ) -> Self {
         LanguageService {
+            position_encoding_kind,
             document_map: HashMap::new(),
             diagnostics_receiver: Box::new(diagnostics_receiver),
         }
@@ -111,13 +123,14 @@ impl<'a> LanguageService<'a> {
     }
 
     #[must_use]
-    pub fn get_definition(&self, uri: &str, offset: u32) -> Option<Definition> {
-        trace!("get_definition: uri: {uri:?}, offset: {offset:?}");
+    pub fn get_definition(&self, uri: &str, position: &Position) -> Option<Definition> {
+        trace!("get_definition: uri: {uri:?}, position: {position:?}");
         let res = definition::get_definition(
+            self.position_encoding_kind,
             &self
             .document_map.get(uri).as_ref()
                 .expect("get_definition should not be called before document has been initialized with update_document").compilation,
-                uri, offset);
+                uri, position);
         trace!("get_definition result: {res:?}");
         res
     }

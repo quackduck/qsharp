@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::protocol::Position;
 use qsc::{
     compile::{self, Error},
     hir::{Item, ItemId, Package, PackageId},
@@ -45,6 +46,22 @@ pub(crate) fn compile_document(
 
 pub(crate) fn span_contains(span: Span, offset: u32) -> bool {
     offset >= span.lo && offset < span.hi
+}
+
+pub(crate) fn map_position(
+    source_map: &SourceMap,
+    source_name: &str,
+    source_position: &Position,
+) -> u32 {
+    let source = source_map
+        .find_by_name(source_name)
+        .expect("source should exist in the source map");
+    let source_offset = match source_position {
+        Position::Utf16LineColumn(p) => p.to_offset(source.contents.as_ref()),
+        Position::Utf8Offset(o) => *o,
+    };
+
+    source.offset + source_offset
 }
 
 pub(crate) fn map_offset(source_map: &SourceMap, source_name: &str, source_offset: u32) -> u32 {

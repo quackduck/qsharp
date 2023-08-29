@@ -4,24 +4,28 @@
 #[cfg(test)]
 mod tests;
 
-use crate::protocol::Definition;
+use crate::protocol::{Definition, Position};
 use crate::qsc_utils::{
-    find_item, map_offset, span_contains, Compilation, QSHARP_LIBRARY_URI_SCHEME,
+    find_item, map_position, span_contains, Compilation, QSHARP_LIBRARY_URI_SCHEME,
 };
+use crate::PositionEncodingKind;
 use qsc::ast::visit::{walk_callable_decl, walk_expr, walk_pat, walk_ty_def, Visitor};
 use qsc::hir::PackageId;
+use qsc::utf16::Position as utf16_Position;
 use qsc::{ast, hir, resolve};
 
 pub(crate) fn get_definition(
+    position_encoding_kind: PositionEncodingKind,
     compilation: &Compilation,
     source_name: &str,
-    offset: u32,
+    position: &Position,
 ) -> Option<Definition> {
     // Map the file offset into a SourceMap offset
-    let offset = map_offset(&compilation.unit.sources, source_name, offset);
+    let offset = map_position(&compilation.unit.sources, source_name, position);
     let ast_package = &compilation.unit.ast;
 
     let mut definition_finder = DefinitionFinder {
+        position_encoding_kind,
         compilation,
         offset,
         definition: None,
@@ -29,18 +33,14 @@ pub(crate) fn get_definition(
     };
     definition_finder.visit_package(&ast_package.package);
 
-    definition_finder
-        .definition
-        .map(|(name, offset)| Definition {
-            source: name,
-            offset,
-        })
+    definition_finder.definition
 }
 
 struct DefinitionFinder<'a> {
+    position_encoding_kind: PositionEncodingKind,
     compilation: &'a Compilation,
     offset: u32,
-    definition: Option<(String, u32)>,
+    definition: Option<Definition>,
     curr_callable: Option<&'a ast::CallableDecl>,
 }
 
@@ -68,7 +68,15 @@ impl DefinitionFinder<'_> {
             None => source.name.to_string(),
         };
 
-        self.definition = Some((source_name, lo - source.offset));
+        self.definition = Some(Definition {
+            source: source_name,
+            position: match self.position_encoding_kind {
+                PositionEncodingKind::Utf8Offset => Position::Utf8Offset(lo - source.offset),
+                PositionEncodingKind::Utf16LineColumn => Position::Utf16LineColumn(
+                    utf16_Position::utf16(source.contents.as_ref(), lo - source.offset),
+                ),
+            },
+        });
     }
 }
 

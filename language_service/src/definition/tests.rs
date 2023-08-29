@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use expect_test::{expect, Expect};
-
 use super::{get_definition, Definition};
-use crate::test_utils::{compile_with_fake_stdlib, get_source_and_marker_offsets};
+use crate::{
+    protocol::Position,
+    test_utils::{compile_with_fake_stdlib, get_source_and_marker_offsets},
+    PositionEncodingKind,
+};
+use expect_test::{expect, Expect};
 
 /// Asserts that the definition found at the given cursor position matches the expected position.
 /// The cursor position is indicated by a `↘` marker in the source text.
@@ -13,13 +16,18 @@ fn assert_definition(source_with_markers: &str) {
     let (source, cursor_offsets, target_offsets) =
         get_source_and_marker_offsets(source_with_markers);
     let compilation = compile_with_fake_stdlib("<source>", &source);
-    let actual_definition = get_definition(&compilation, "<source>", cursor_offsets[0]);
+    let actual_definition = get_definition(
+        PositionEncodingKind::Utf8Offset,
+        &compilation,
+        "<source>",
+        &Position::Utf8Offset(cursor_offsets[0]),
+    );
     let expected_definition = if target_offsets.is_empty() {
         None
     } else {
         Some(Definition {
             source: "<source>".to_string(),
-            offset: target_offsets[0],
+            position: Position::Utf8Offset(target_offsets[0]),
         })
     };
     assert_eq!(&expected_definition, &actual_definition);
@@ -28,7 +36,12 @@ fn assert_definition(source_with_markers: &str) {
 fn check(source_with_markers: &str, expect: &Expect) {
     let (source, cursor_offsets, _) = get_source_and_marker_offsets(source_with_markers);
     let compilation = compile_with_fake_stdlib("<source>", &source);
-    let actual_definition = get_definition(&compilation, "<source>", cursor_offsets[0]);
+    let actual_definition = get_definition(
+        PositionEncodingKind::Utf8Offset,
+        &compilation,
+        "<source>",
+        &Position::Utf8Offset(cursor_offsets[0]),
+    );
     expect.assert_debug_eq(&actual_definition);
 }
 
@@ -278,6 +291,10 @@ fn std_call() {
             Some(
                 Definition {
                     source: "qsharp-library-source:<std>",
+                    position: Position {
+                        line: 1,
+                        column: 26,
+                    },
                     offset: 49,
                 },
             )

@@ -3,6 +3,7 @@
 
 use miette::{Diagnostic, Severity};
 use qsc::{self, compile};
+use qsls::PositionEncodingKind;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Write, iter};
 use wasm_bindgen::prelude::*;
@@ -16,6 +17,7 @@ impl LanguageService {
     pub fn new(diagnostics_callback: &js_sys::Function) -> Self {
         let diagnostics_callback = diagnostics_callback.clone();
         let inner = qsls::LanguageService::new(
+            PositionEncodingKind::Utf16LineColumn,
             move |uri: &str, version: u32, errors: &[compile::Error]| {
                 let diags = errors.iter().map(VSDiagnostic::from).collect::<Vec<_>>();
                 let _ = diagnostics_callback
@@ -83,12 +85,24 @@ impl LanguageService {
         })?)
     }
 
-    pub fn get_definition(&self, uri: &str, offset: u32) -> Result<JsValue, JsValue> {
-        let definition = self.0.get_definition(uri, offset);
+    pub fn get_definition(&self, uri: &str, position: IPosition) -> Result<JsValue, JsValue> {
+        let position: Position = serde_wasm_bindgen::from_value(position.into()).unwrap();
+        let definition = self.0.get_definition(
+            uri,
+            &qsls::protocol::Position::utf16_line_column(position.line, position.character),
+        );
         Ok(match definition {
             Some(definition) => serde_wasm_bindgen::to_value(&Definition {
                 source: definition.source,
-                offset: definition.offset,
+                position: match definition.position {
+                    qsls::protocol::Position::Utf8Offset(_) => {
+                        panic!("expected utf-16 line/column position")
+                    }
+                    qsls::protocol::Position::Utf16LineColumn(p) => Position {
+                        line: p.line,
+                        character: p.column,
+                    },
+                },
             })?,
             None => JsValue::NULL,
         })
@@ -175,14 +189,34 @@ pub struct Hover {
 const IDefinition: &'static str = r#"
 export interface IDefinition {
     source: string;
-    offset: number;
+    position: IPosition;
 }
 "#;
 
 #[derive(Serialize, Deserialize)]
 pub struct Definition {
     pub source: String,
-    pub offset: u32,
+    pub position: Position,
+}
+
+#[wasm_bindgen(typescript_custom_section)]
+const IDefinition: &'static str = r#"
+export interface IPosition {
+    line: number;
+    character: number;
+}
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "IPosition")]
+    pub type IPosition;
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Position {
+    pub line: u32,
+    pub character: u32,
 }
 
 #[derive(Serialize, Deserialize)]
