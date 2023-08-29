@@ -16,15 +16,11 @@ class QSharpCompletionItemProvider implements vscode.CompletionItemProvider {
 
   async provideCompletionItems(
     document: vscode.TextDocument,
-    position: vscode.Position,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    token: vscode.CancellationToken,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    context: vscode.CompletionContext
+    position: vscode.Position
   ) {
     const completions = await this.languageService.getCompletions(
       document.uri.toString(),
-      document.offsetAt(position)
+      position
     );
     return completions.items.map((c) => {
       let kind;

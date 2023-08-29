@@ -21,12 +21,12 @@ fn check(source_with_markers: &str, expect: &Expect) {
         PositionEncodingKind::Utf8Offset,
         &compilation,
         "<source>",
-        cursor_offsets[0],
+        &Position::Utf8Offset(cursor_offsets[0]),
     )
     .expect("Expected a hover.");
     assert_eq!(
         &actual.span,
-        &protocol::Span {
+        &protocol::Range {
             start: Position::Utf8Offset(target_offsets[0]),
             end: Position::Utf8Offset(target_offsets[1]),
         }
@@ -42,7 +42,7 @@ fn check_none(source_with_markers: &str) {
         PositionEncodingKind::Utf8Offset,
         &compilation,
         "<source>",
-        cursor_offsets[0],
+        &Position::Utf8Offset(cursor_offsets[0]),
     );
     assert!(actual.is_none());
 }

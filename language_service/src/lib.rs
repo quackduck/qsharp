@@ -109,15 +109,15 @@ impl<'a> LanguageService<'a> {
     }
 
     #[must_use]
-    pub fn get_completions(&self, uri: &str, offset: u32) -> CompletionList {
-        trace!("get_completions: uri: {uri:?}, offset: {offset:?}");
+    pub fn get_completions(&self, uri: &str, position: &Position) -> CompletionList {
+        trace!("get_completions: uri: {uri:?}, position: {position:?}");
         let res = completion::get_completions(
             self.position_encoding_kind,
             &self
                 .document_map.get(uri).as_ref()
                 .expect("get_completions should not be called before document has been initialized with update_document").compilation,
             uri,
-            offset,
+            position,
         );
         trace!("get_completions result: {res:?}");
         res
@@ -137,14 +137,14 @@ impl<'a> LanguageService<'a> {
     }
 
     #[must_use]
-    pub fn get_hover(&self, uri: &str, offset: u32) -> Option<Hover> {
-        trace!("get_hover: uri: {uri:?}, offset: {offset:?}");
+    pub fn get_hover(&self, uri: &str, position: &Position) -> Option<Hover> {
+        trace!("get_hover: uri: {uri:?}, position: {position:?}");
         let res = hover::get_hover(
             self.position_encoding_kind,
             &self
             .document_map.get(uri).as_ref()
                 .expect("get_hover should not be called before document has been initialized with update_document").compilation,
-                uri, offset);
+                uri, position);
         trace!("get_hover result: {res:?}");
         res
     }

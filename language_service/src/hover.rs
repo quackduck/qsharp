@@ -5,8 +5,8 @@
 mod tests;
 
 use crate::display::CodeDisplay;
-use crate::protocol::{self, Hover};
-use crate::qsc_utils::{find_item, map_offset, position, span_contains, Compilation};
+use crate::protocol::{self, Hover, Position};
+use crate::qsc_utils::{self, find_item, map_position, span_contains, Compilation};
 use crate::PositionEncodingKind;
 use qsc::ast::visit::{
     walk_callable_decl, walk_expr, walk_namespace, walk_pat, walk_ty_def, Visitor,
@@ -24,10 +24,9 @@ pub(crate) fn get_hover(
     position_encoding_kind: PositionEncodingKind,
     compilation: &Compilation,
     source_name: &str,
-    offset: u32,
+    position: &Position,
 ) -> Option<Hover> {
-    // Map the file offset into a SourceMap offset
-    let offset = map_offset(&compilation.unit.sources, source_name, offset);
+    let offset = map_position(&compilation.unit.sources, source_name, position);
     let package = &compilation.unit.ast.package;
 
     let mut hover_visitor = HoverVisitor {
@@ -44,13 +43,13 @@ pub(crate) fn get_hover(
 
     hover_visitor.contents.map(|contents| Hover {
         contents,
-        span: protocol::Span {
-            start: position(
+        span: protocol::Range {
+            start: qsc_utils::position(
                 position_encoding_kind,
                 &compilation.unit.sources,
                 hover_visitor.start,
             ),
-            end: position(
+            end: qsc_utils::position(
                 position_encoding_kind,
                 &compilation.unit.sources,
                 hover_visitor.end,

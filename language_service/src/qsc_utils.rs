@@ -83,14 +83,6 @@ pub(crate) fn map_position(
     source.offset + source_offset
 }
 
-pub(crate) fn map_offset(source_map: &SourceMap, source_name: &str, source_offset: u32) -> u32 {
-    source_map
-        .find_by_name(source_name)
-        .expect("source should exist in the source map")
-        .offset
-        + source_offset
-}
-
 pub(crate) fn find_item<'a>(
     compilation: &'a Compilation,
     id: &ItemId,

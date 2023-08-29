@@ -11,15 +11,10 @@ export function createHoverProvider(languageService: ILanguageService) {
 class QSharpHoverProvider implements vscode.HoverProvider {
   constructor(public languageService: ILanguageService) {}
 
-  async provideHover(
-    document: vscode.TextDocument,
-    position: vscode.Position,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    token: vscode.CancellationToken
-  ) {
+  async provideHover(document: vscode.TextDocument, position: vscode.Position) {
     const hover = await this.languageService.getHover(
       document.uri.toString(),
-      document.offsetAt(position)
+      position
     );
     return (
       hover &&

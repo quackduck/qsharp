@@ -25,7 +25,7 @@ impl Position {
 
 /// Represents a span of text used by the Language Server API
 #[derive(Debug, PartialEq)]
-pub struct Span {
+pub struct Range {
     pub start: Position,
     pub end: Position,
 }
@@ -55,7 +55,7 @@ pub struct CompletionItem {
     pub kind: CompletionItemKind,
     pub sort_text: Option<String>,
     pub detail: Option<String>,
-    pub additional_text_edits: Option<Vec<(Span, String)>>,
+    pub additional_text_edits: Option<Vec<(Range, String)>>,
 }
 
 impl CompletionItem {
@@ -80,5 +80,5 @@ pub struct Definition {
 #[derive(Debug, PartialEq)]
 pub struct Hover {
     pub contents: String,
-    pub span: Span,
+    pub span: Range,
 }

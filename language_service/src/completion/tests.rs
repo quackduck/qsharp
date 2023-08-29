@@ -5,6 +5,7 @@ use expect_test::{expect, Expect};
 
 use super::{get_completions, CompletionItem};
 use crate::{
+    protocol::Position,
     test_utils::{compile_with_fake_stdlib, get_source_and_marker_offsets},
     PositionEncodingKind,
 };
@@ -16,7 +17,7 @@ fn check(source_with_cursor: &str, completions_to_check: &[&str], expect: &Expec
         PositionEncodingKind::Utf8Offset,
         &compilation,
         "<source>",
-        cursor_offset[0],
+        &Position::Utf8Offset(cursor_offset[0]),
     );
     let checked_completions: Vec<Option<&CompletionItem>> = completions_to_check
         .iter()

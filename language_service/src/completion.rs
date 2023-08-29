@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::display::CodeDisplay;
 use crate::protocol::{self, CompletionItem, CompletionItemKind, CompletionList, Position};
-use crate::qsc_utils::{map_offset, position, span_contains, Compilation};
+use crate::qsc_utils::{map_position, position, span_contains, Compilation};
 use crate::PositionEncodingKind;
 use qsc::ast::visit::{self, Visitor};
 use qsc::hir::{ItemKind, Package, PackageId};
@@ -24,10 +24,9 @@ pub(crate) fn get_completions(
     position_encoding_kind: PositionEncodingKind,
     compilation: &Compilation,
     source_name: &str,
-    offset: u32,
+    position: &Position,
 ) -> CompletionList {
-    // Map the file offset into a SourceMap offset
-    let offset = map_offset(&compilation.unit.sources, source_name, offset);
+    let offset = map_position(&compilation.unit.sources, source_name, position);
 
     // Determine context for the offset
     let mut context_finder = ContextFinder {
@@ -309,7 +308,7 @@ impl CompletionListBuilder {
                                                 Some(start) => {
                                                     let position = position(start);
                                                     additional_edits.push((
-                                                        protocol::Span {
+                                                        protocol::Range {
                                                             start: position,
                                                             end: position,
                                                         },

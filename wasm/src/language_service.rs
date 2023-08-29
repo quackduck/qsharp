@@ -51,8 +51,10 @@ impl LanguageService {
         self.0.close_document(uri);
     }
 
-    pub fn get_completions(&self, uri: &str, offset: u32) -> Result<JsValue, JsValue> {
-        let completion_list = self.0.get_completions(uri, offset);
+    pub fn get_completions(&self, uri: &str, position: IPosition) -> Result<JsValue, JsValue> {
+        let completion_list = self
+            .0
+            .get_completions(uri, &qsls::protocol::Position::from(position));
         Ok(serde_wasm_bindgen::to_value(&CompletionList {
             items: completion_list
                 .items
@@ -83,11 +85,9 @@ impl LanguageService {
     }
 
     pub fn get_definition(&self, uri: &str, position: IPosition) -> Result<JsValue, JsValue> {
-        let position: Position = serde_wasm_bindgen::from_value(position.into()).unwrap();
-        let definition = self.0.get_definition(
-            uri,
-            &qsls::protocol::Position::utf16_line_column(position.line, position.character),
-        );
+        let definition = self
+            .0
+            .get_definition(uri, &qsls::protocol::Position::from(position));
         Ok(match definition {
             Some(definition) => serde_wasm_bindgen::to_value(&Definition {
                 source: definition.source,
@@ -97,8 +97,10 @@ impl LanguageService {
         })
     }
 
-    pub fn get_hover(&self, uri: &str, offset: u32) -> Result<JsValue, JsValue> {
-        let hover = self.0.get_hover(uri, offset);
+    pub fn get_hover(&self, uri: &str, position: IPosition) -> Result<JsValue, JsValue> {
+        let hover = self
+            .0
+            .get_hover(uri, &qsls::protocol::Position::from(position));
         Ok(match hover {
             Some(hover) => serde_wasm_bindgen::to_value(&Hover {
                 contents: hover.contents,
@@ -144,7 +146,7 @@ pub struct CompletionItem {
 
 /// ($struct: item, $interface:ident, $typescript_type_name: literal, $typescript: literal)
 macro_rules! define_interop_type {
-    ($struct: item, $interface:ident, $typescript_type_name: literal, $typescript: literal) => {
+    ($name: ident, $struct: item, $interface:ident, $typescript_type_name: literal, $typescript: literal) => {
         #[wasm_bindgen(typescript_custom_section)]
         const $interface: &'static str = "// hmm";
 
@@ -153,6 +155,7 @@ macro_rules! define_interop_type {
 
         #[wasm_bindgen]
         extern "C" {
+            #[doc="TypeScript type name for interop type"]
             #[wasm_bindgen(typescript_type = $typescript_type_name)]
             pub type $interface;
         }
@@ -160,10 +163,16 @@ macro_rules! define_interop_type {
         #[derive(Serialize, Deserialize)]
         #[allow(non_snake_case)] // These types propagate to JS which expects camelCase
         $struct
+
+        impl From<$interface> for $name {
+            fn from(js_val: $interface) -> Self {
+                serde_wasm_bindgen::from_value(js_val.into()).unwrap()
+            }
+        }
     };
 }
 
-define_interop_type! {pub struct TextEdit {
+define_interop_type! {TextEdit, pub struct TextEdit {
     pub range: Range,
     pub newText: String,
 }, ITextEdit, "ITextEdit", r#"
@@ -172,7 +181,7 @@ export interface ITextEdit {
     newText: string;
 }"#}
 
-define_interop_type! {pub struct Hover {
+define_interop_type! {Hover, pub struct Hover {
     pub contents: String,
     pub span: Range,
 }, IHover, "IHover", r#"
@@ -181,7 +190,7 @@ export interface IHover {
     span: IRange
 }"#}
 
-define_interop_type! {pub struct Definition {
+define_interop_type! {Definition, pub struct Definition {
     pub source: String,
     pub position: Position,
 }, IDefinition, "IDefinition", r#"
@@ -190,10 +199,11 @@ export interface IDefinition {
     position: IPosition;
 }"#}
 
-define_interop_type! {pub struct Position {
+define_interop_type! {Position, pub struct Position {
     pub line: u32,
     pub character: u32,
-}, IPosition, "IPosition", r#"export interface IPosition {
+},
+IPosition, "IPosition", r#"export interface IPosition {
     line: number;
     character: number;
 }"#}
@@ -202,6 +212,11 @@ impl From<qsls::protocol::Position> for Position {
     fn from(position: qsls::protocol::Position) -> Self {
         match position {
             qsls::protocol::Position::Utf8Offset(_) => {
+                // We don't ever expect consumers of the wasm module
+                // to ask for utf-8 offsets from the language service,
+                // since JavaScript doesn't support utf-8.
+                // We configure the language service with `PositionEncodingKind::Utf16LineColumn`
+                // to avoid ever getting utf-8 offsets.
                 panic!("expected utf-16 line/column position")
             }
             qsls::protocol::Position::Utf16LineColumn(p) => Position {
@@ -212,7 +227,14 @@ impl From<qsls::protocol::Position> for Position {
     }
 }
 
-define_interop_type! {pub struct Range {
+impl From<IPosition> for qsls::protocol::Position {
+    fn from(position: IPosition) -> Self {
+        let position = Position::from(position);
+        qsls::protocol::Position::utf16_line_column(position.line, position.character)
+    }
+}
+
+define_interop_type! {Range, pub struct Range {
     pub start: Position,
     pub end: Position,
 }, IRange, "IRange", r#"export interface IRange {
@@ -220,8 +242,8 @@ define_interop_type! {pub struct Range {
     end: IPosition;
 }"#}
 
-impl From<qsls::protocol::Span> for Range {
-    fn from(span: qsls::protocol::Span) -> Self {
+impl From<qsls::protocol::Range> for Range {
+    fn from(span: qsls::protocol::Range) -> Self {
         Range {
             start: span.start.into(),
             end: span.end.into(),

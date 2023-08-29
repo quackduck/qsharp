@@ -202,7 +202,7 @@ function registerMonacoLanguageServiceProviders(
     ) => {
       const completions = await languageService.getCompletions(
         model.uri.toString(),
-        model.getOffsetAt(position)
+        { line: position.lineNumber - 1, character: position.column - 1 }
       );
       return {
         suggestions: completions.items.map((i) => {
@@ -251,10 +251,10 @@ function registerMonacoLanguageServiceProviders(
       model: monaco.editor.ITextModel,
       position: monaco.Position
     ) => {
-      const hover = await languageService.getHover(
-        model.uri.toString(),
-        model.getOffsetAt(position)
-      );
+      const hover = await languageService.getHover(model.uri.toString(), {
+        line: position.lineNumber - 1,
+        character: position.column - 1,
+      });
 
       if (hover) {
         return {

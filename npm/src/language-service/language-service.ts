@@ -10,11 +10,7 @@ import type {
   IPosition,
 } from "../../lib/node/qsc_wasm.cjs";
 import { log } from "../log.js";
-import {
-  VSDiagnostic,
-  mapDiagnostics,
-  mapUtf16UnitsToUtf8Units,
-} from "../vsdiagnostic.js";
+import { VSDiagnostic, mapDiagnostics } from "../vsdiagnostic.js";
 import { IServiceEventTarget, IServiceProxy } from "../worker-proxy.js";
 type QscWasm = typeof import("../../lib/node/qsc_wasm.cjs");
 
@@ -38,8 +34,11 @@ export interface ILanguageService {
     isExe: boolean
   ): Promise<void>;
   closeDocument(uri: string): Promise<void>;
-  getCompletions(documentUri: string, offset: number): Promise<ICompletionList>;
-  getHover(documentUri: string, offset: number): Promise<IHover | null>;
+  getCompletions(
+    documentUri: string,
+    position: IPosition
+  ): Promise<ICompletionList>;
+  getHover(documentUri: string, position: IPosition): Promise<IHover | null>;
   getDefinition(
     documentUri: string,
     position: IPosition
@@ -93,23 +92,22 @@ export class QSharpLanguageService implements ILanguageService {
 
   async getCompletions(
     documentUri: string,
-    offset: number
+    position: IPosition
   ): Promise<ICompletionList> {
-    const code = this.code[documentUri];
-    const convertedOffset = mapUtf16UnitsToUtf8Units([offset], code)[offset];
     const result = this.languageService.get_completions(
       documentUri,
-      convertedOffset
+      position
     ) as ICompletionList;
     return result;
   }
 
-  async getHover(documentUri: string, offset: number): Promise<IHover | null> {
-    const code = this.code[documentUri];
-    const convertedOffset = mapUtf16UnitsToUtf8Units([offset], code)[offset];
+  async getHover(
+    documentUri: string,
+    position: IPosition
+  ): Promise<IHover | null> {
     const result = this.languageService.get_hover(
       documentUri,
-      convertedOffset
+      position
     ) as IHover | null;
     return result;
   }
