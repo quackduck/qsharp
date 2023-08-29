@@ -72,10 +72,7 @@ impl LanguageService {
                         edits
                             .into_iter()
                             .map(|(span, text)| TextEdit {
-                                range: Span {
-                                    start: span.start,
-                                    end: span.end,
-                                },
+                                range: span.into(),
                                 newText: text,
                             })
                             .collect()
@@ -94,15 +91,7 @@ impl LanguageService {
         Ok(match definition {
             Some(definition) => serde_wasm_bindgen::to_value(&Definition {
                 source: definition.source,
-                position: match definition.position {
-                    qsls::protocol::Position::Utf8Offset(_) => {
-                        panic!("expected utf-16 line/column position")
-                    }
-                    qsls::protocol::Position::Utf16LineColumn(p) => Position {
-                        line: p.line,
-                        character: p.column,
-                    },
-                },
+                position: definition.position.into(),
             })?,
             None => JsValue::NULL,
         })
@@ -113,10 +102,7 @@ impl LanguageService {
         Ok(match hover {
             Some(hover) => serde_wasm_bindgen::to_value(&Hover {
                 contents: hover.contents,
-                span: Span {
-                    start: hover.span.start,
-                    end: hover.span.end,
-                },
+                span: hover.span.into(),
             })?,
             None => JsValue::NULL,
         })
@@ -136,7 +122,7 @@ export interface ICompletionList {
         kind: "function" | "interface" | "keyword" | "module";
         sortText?: string;
         detail?: string;
-        additionalTextEdits?: TextEdit[];
+        additionalTextEdits?: ITextEdit[];
     }>
 }
 "#;
@@ -156,73 +142,91 @@ pub struct CompletionItem {
     pub additionalTextEdits: Option<Vec<TextEdit>>,
 }
 
-#[wasm_bindgen(typescript_custom_section)]
-const ITextEdit: &'static str = r#"
-export interface ITextEdit {
-    range: { start: number; end: number; };
-    newText: string;
-}
-"#;
+/// ($struct: item, $interface:ident, $typescript_type_name: literal, $typescript: literal)
+macro_rules! define_interop_type {
+    ($struct: item, $interface:ident, $typescript_type_name: literal, $typescript: literal) => {
+        #[wasm_bindgen(typescript_custom_section)]
+        const $interface: &'static str = "// hmm";
 
-#[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)] // These types propagate to JS which expects camelCase
-pub struct TextEdit {
-    pub range: Span,
+        #[wasm_bindgen(typescript_custom_section)]
+        const $interface: &'static str = $typescript;
+
+        #[wasm_bindgen]
+        extern "C" {
+            #[wasm_bindgen(typescript_type = $typescript_type_name)]
+            pub type $interface;
+        }
+
+        #[derive(Serialize, Deserialize)]
+        #[allow(non_snake_case)] // These types propagate to JS which expects camelCase
+        $struct
+    };
+}
+
+define_interop_type! {pub struct TextEdit {
+    pub range: Range,
     pub newText: String,
-}
+}, ITextEdit, "ITextEdit", r#"
+export interface ITextEdit {
+    range: IRange;
+    newText: string;
+}"#}
 
-#[wasm_bindgen(typescript_custom_section)]
-const IHover: &'static str = r#"
+define_interop_type! {pub struct Hover {
+    pub contents: String,
+    pub span: Range,
+}, IHover, "IHover", r#"
 export interface IHover {
     contents: string;
-    span: { start: number; end: number }
-}
-"#;
+    span: IRange
+}"#}
 
-#[derive(Serialize, Deserialize)]
-pub struct Hover {
-    pub contents: String,
-    pub span: Span,
-}
-
-#[wasm_bindgen(typescript_custom_section)]
-const IDefinition: &'static str = r#"
+define_interop_type! {pub struct Definition {
+    pub source: String,
+    pub position: Position,
+}, IDefinition, "IDefinition", r#"
 export interface IDefinition {
     source: string;
     position: IPosition;
-}
-"#;
+}"#}
 
-#[derive(Serialize, Deserialize)]
-pub struct Definition {
-    pub source: String,
-    pub position: Position,
-}
-
-#[wasm_bindgen(typescript_custom_section)]
-const IDefinition: &'static str = r#"
-export interface IPosition {
-    line: number;
-    character: number;
-}
-"#;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "IPosition")]
-    pub type IPosition;
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Position {
+define_interop_type! {pub struct Position {
     pub line: u32,
     pub character: u32,
+}, IPosition, "IPosition", r#"export interface IPosition {
+    line: number;
+    character: number;
+}"#}
+
+impl From<qsls::protocol::Position> for Position {
+    fn from(position: qsls::protocol::Position) -> Self {
+        match position {
+            qsls::protocol::Position::Utf8Offset(_) => {
+                panic!("expected utf-16 line/column position")
+            }
+            qsls::protocol::Position::Utf16LineColumn(p) => Position {
+                line: p.line,
+                character: p.column,
+            },
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Span {
-    pub start: u32,
-    pub end: u32,
+define_interop_type! {pub struct Range {
+    pub start: Position,
+    pub end: Position,
+}, IRange, "IRange", r#"export interface IRange {
+    start: IPosition;
+    end: IPosition;
+}"#}
+
+impl From<qsls::protocol::Span> for Range {
+    fn from(span: qsls::protocol::Span) -> Self {
+        Range {
+            start: span.start.into(),
+            end: span.end.into(),
+        }
+    }
 }
 
 #[wasm_bindgen(typescript_custom_section)]

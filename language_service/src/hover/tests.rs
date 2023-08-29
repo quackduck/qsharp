@@ -3,8 +3,9 @@
 
 use super::get_hover;
 use crate::{
-    protocol,
+    protocol::{self, Position},
     test_utils::{compile_with_fake_stdlib, get_source_and_marker_offsets},
+    PositionEncodingKind,
 };
 use expect_test::{expect, Expect};
 use indoc::indoc;
@@ -16,12 +17,18 @@ fn check(source_with_markers: &str, expect: &Expect) {
     let (source, cursor_offsets, target_offsets) =
         get_source_and_marker_offsets(source_with_markers);
     let compilation = compile_with_fake_stdlib("<source>", &source);
-    let actual = get_hover(&compilation, "<source>", cursor_offsets[0]).expect("Expected a hover.");
+    let actual = get_hover(
+        PositionEncodingKind::Utf8Offset,
+        &compilation,
+        "<source>",
+        cursor_offsets[0],
+    )
+    .expect("Expected a hover.");
     assert_eq!(
         &actual.span,
         &protocol::Span {
-            start: target_offsets[0],
-            end: target_offsets[1],
+            start: Position::Utf8Offset(target_offsets[0]),
+            end: Position::Utf8Offset(target_offsets[1]),
         }
     );
     expect.assert_eq(&actual.contents);
@@ -31,7 +38,12 @@ fn check(source_with_markers: &str, expect: &Expect) {
 fn check_none(source_with_markers: &str) {
     let (source, cursor_offsets, _) = get_source_and_marker_offsets(source_with_markers);
     let compilation = compile_with_fake_stdlib("<source>", &source);
-    let actual = get_hover(&compilation, "<source>", cursor_offsets[0]);
+    let actual = get_hover(
+        PositionEncodingKind::Utf8Offset,
+        &compilation,
+        "<source>",
+        cursor_offsets[0],
+    );
     assert!(actual.is_none());
 }
 

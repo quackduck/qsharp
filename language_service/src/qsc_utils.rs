@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::protocol::Position;
+use crate::{protocol::Position, PositionEncodingKind};
 use qsc::{
     compile::{self, Error},
     hir::{Item, ItemId, Package, PackageId},
-    CompileUnit, PackageStore, PackageType, SourceMap, Span, TargetProfile,
+    utf16, CompileUnit, PackageStore, PackageType, SourceMap, Span, TargetProfile,
 };
 
 pub(crate) const QSHARP_LIBRARY_URI_SCHEME: &str = "qsharp-library-source";
@@ -46,6 +46,25 @@ pub(crate) fn compile_document(
 
 pub(crate) fn span_contains(span: Span, offset: u32) -> bool {
     offset >= span.lo && offset < span.hi
+}
+
+pub(crate) fn position(
+    position_encoding_kind: PositionEncodingKind,
+    source_map: &SourceMap,
+    offset: u32,
+) -> Position {
+    match position_encoding_kind {
+        PositionEncodingKind::Utf8Offset => Position::Utf8Offset(offset),
+        PositionEncodingKind::Utf16LineColumn => {
+            let source = source_map
+                .find_by_offset(offset)
+                .expect("expected offset to be in a source");
+            Position::Utf16LineColumn(utf16::Position::utf16(
+                source.contents.as_ref(),
+                offset - source.offset,
+            ))
+        }
+    }
 }
 
 pub(crate) fn map_position(

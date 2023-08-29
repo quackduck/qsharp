@@ -7,10 +7,12 @@ mod tests;
 use std::rc::Rc;
 
 use crate::display::CodeDisplay;
-use crate::protocol::{self, CompletionItem, CompletionItemKind, CompletionList};
-use crate::qsc_utils::{map_offset, span_contains, Compilation};
+use crate::protocol::{self, CompletionItem, CompletionItemKind, CompletionList, Position};
+use crate::qsc_utils::{map_offset, position, span_contains, Compilation};
+use crate::PositionEncodingKind;
 use qsc::ast::visit::{self, Visitor};
 use qsc::hir::{ItemKind, Package, PackageId};
+use qsc::CompileUnit;
 
 const PRELUDE: [&str; 3] = [
     "Microsoft.Quantum.Canon",
@@ -19,6 +21,7 @@ const PRELUDE: [&str; 3] = [
 ];
 
 pub(crate) fn get_completions(
+    position_encoding_kind: PositionEncodingKind,
     compilation: &Compilation,
     source_name: &str,
     offset: u32,
@@ -55,7 +58,7 @@ pub(crate) fn get_completions(
     // So the following is an attempt to get "good enough" completions, tuned
     // based on the user experience of typing out a few samples in the editor.
 
-    let mut builder = CompletionListBuilder::new();
+    let mut builder = CompletionListBuilder::new(position_encoding_kind);
     match context_finder.context {
         Context::Namespace => {
             // Include "open", "operation", etc
@@ -104,13 +107,15 @@ pub(crate) fn get_completions(
 }
 
 struct CompletionListBuilder {
+    position_encoding_kind: PositionEncodingKind,
     current_sort_group: u32,
     items: Vec<CompletionItem>,
 }
 
 impl CompletionListBuilder {
-    fn new() -> Self {
+    fn new(position_encoding_kind: PositionEncodingKind) -> Self {
         CompletionListBuilder {
+            position_encoding_kind,
             current_sort_group: 1,
             items: Vec::new(),
         }
@@ -167,12 +172,11 @@ impl CompletionListBuilder {
         start_of_namespace: Option<u32>,
         current_namespace_name: &Option<Rc<str>>,
     ) {
-        let current = &compilation.unit.package;
+        let current = &compilation.unit;
         let std = &compilation
             .package_store
             .get(compilation.std_package_id)
-            .expect("expected to find std package")
-            .package;
+            .expect("expected to find std package");
         let core = &compilation
             .package_store
             .get(PackageId::CORE)
@@ -181,21 +185,23 @@ impl CompletionListBuilder {
 
         let display = CodeDisplay { compilation };
 
-        let get_callables = |current, display| {
+        let position_encoding_kind = self.position_encoding_kind;
+        let get_callables = |unit, display| {
             Self::get_callables(
-                current,
+                unit,
                 display,
                 opens,
                 start_of_namespace,
                 current_namespace_name.clone(),
+                |o| position(position_encoding_kind, &current.sources, o),
             )
         };
 
         self.push_sorted_completions(get_callables(current, &display));
         self.push_sorted_completions(get_callables(std, &display));
         self.push_sorted_completions(Self::get_core_callables(core, &display));
-        self.push_completions(Self::get_namespaces(current));
-        self.push_completions(Self::get_namespaces(std));
+        self.push_completions(Self::get_namespaces(&current.package));
+        self.push_completions(Self::get_namespaces(&std.package));
         self.push_completions(Self::get_namespaces(core));
     }
 
@@ -257,13 +263,18 @@ impl CompletionListBuilder {
         self.current_sort_group += 1;
     }
 
-    fn get_callables<'a>(
-        package: &'a Package,
+    fn get_callables<'a, F>(
+        unit: &'a CompileUnit,
         display: &'a CodeDisplay,
         opens: &'a [(Rc<str>, Option<Rc<str>>)],
         start_of_namespace: Option<u32>,
         current_namespace_name: Option<Rc<str>>,
-    ) -> impl Iterator<Item = (CompletionItem, u32)> + 'a {
+        position: F,
+    ) -> impl Iterator<Item = (CompletionItem, u32)> + 'a
+    where
+        F: Fn(u32) -> Position + 'a,
+    {
+        let package = &unit.package;
         package.items.values().filter_map(move |i| {
             // We only want items whose parents are namespaces
             if let Some(item_id) = i.parent {
@@ -296,8 +307,12 @@ impl CompletionListBuilder {
                                             Some(alias) => alias.as_ref().cloned(),
                                             None => match start_of_namespace {
                                                 Some(start) => {
+                                                    let position = position(start);
                                                     additional_edits.push((
-                                                        protocol::Span { start, end: start },
+                                                        protocol::Span {
+                                                            start: position,
+                                                            end: position,
+                                                        },
                                                         format!(
                                                             "open {};\n    ",
                                                             namespace.name.clone()

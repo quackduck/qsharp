@@ -14,7 +14,6 @@ import {
   VSDiagnostic,
   mapDiagnostics,
   mapUtf16UnitsToUtf8Units,
-  mapUtf8UnitsToUtf16Units,
 } from "../vsdiagnostic.js";
 import { IServiceEventTarget, IServiceProxy } from "../worker-proxy.js";
 type QscWasm = typeof import("../../lib/node/qsc_wasm.cjs");
@@ -102,16 +101,6 @@ export class QSharpLanguageService implements ILanguageService {
       documentUri,
       convertedOffset
     ) as ICompletionList;
-    result.items.forEach((item) =>
-      item.additionalTextEdits?.forEach((edit) => {
-        const mappedSpan = mapUtf8UnitsToUtf16Units(
-          [edit.range.start, edit.range.end],
-          code
-        );
-        edit.range.start = mappedSpan[edit.range.start];
-        edit.range.end = mappedSpan[edit.range.end];
-      })
-    );
     return result;
   }
 
@@ -122,14 +111,6 @@ export class QSharpLanguageService implements ILanguageService {
       documentUri,
       convertedOffset
     ) as IHover | null;
-    if (result) {
-      const mappedSpan = mapUtf8UnitsToUtf16Units(
-        [result.span.start, result.span.end],
-        code
-      );
-      result.span.start = mappedSpan[result.span.start];
-      result.span.end = mappedSpan[result.span.end];
-    }
     return result;
   }
 

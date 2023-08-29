@@ -3,7 +3,7 @@
 
 use qsc::utf16::{Position as utf16_Position, PositionEncoding as utf16_PositionEncoding};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Position {
     /// Line and column are both 0-indexed
     /// Column offset in terms of utf-16 code units (i.e. 2-byte units)
@@ -26,8 +26,8 @@ impl Position {
 /// Represents a span of text used by the Language Server API
 #[derive(Debug, PartialEq)]
 pub struct Span {
-    pub start: u32,
-    pub end: u32,
+    pub start: Position,
+    pub end: Position,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

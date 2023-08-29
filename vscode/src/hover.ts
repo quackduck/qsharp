@@ -26,8 +26,11 @@ class QSharpHoverProvider implements vscode.HoverProvider {
       new vscode.Hover(
         new vscode.MarkdownString(hover.contents),
         new vscode.Range(
-          document.positionAt(hover.span.start),
-          document.positionAt(hover.span.end)
+          new vscode.Position(
+            hover.span.start.line,
+            hover.span.start.character
+          ),
+          new vscode.Position(hover.span.end.line, hover.span.end.character)
         )
       )
     );

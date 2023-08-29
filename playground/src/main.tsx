@@ -228,14 +228,12 @@ function registerMonacoLanguageServiceProviders(
             sortText: i.sortText,
             detail: i.detail,
             additionalTextEdits: i.additionalTextEdits?.map((edit) => {
-              const start = model.getPositionAt(edit.range.start);
-              const end = model.getPositionAt(edit.range.end);
               const textEdit: monaco.languages.TextEdit = {
                 range: new monaco.Range(
-                  start.lineNumber,
-                  start.column,
-                  end.lineNumber,
-                  end.column
+                  edit.range.start.line + 1,
+                  edit.range.start.character + 1,
+                  edit.range.end.line + 1,
+                  edit.range.end.character + 1
                 ),
                 text: edit.newText,
               };
@@ -259,17 +257,14 @@ function registerMonacoLanguageServiceProviders(
       );
 
       if (hover) {
-        const start = model.getPositionAt(hover.span.start);
-        const end = model.getPositionAt(hover.span.end);
-
         return {
           contents: [{ value: hover.contents }],
-          range: {
-            startLineNumber: start.lineNumber,
-            startColumn: start.column,
-            endLineNumber: end.lineNumber,
-            endColumn: end.column,
-          },
+          range: new monaco.Range(
+            hover.span.start.line + 1,
+            hover.span.start.character + 1,
+            hover.span.end.line + 1,
+            hover.span.end.character + 1
+          ),
         };
       }
       return null;

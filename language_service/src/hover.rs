@@ -6,7 +6,8 @@ mod tests;
 
 use crate::display::CodeDisplay;
 use crate::protocol::{self, Hover};
-use crate::qsc_utils::{find_item, map_offset, span_contains, Compilation};
+use crate::qsc_utils::{find_item, map_offset, position, span_contains, Compilation};
+use crate::PositionEncodingKind;
 use qsc::ast::visit::{
     walk_callable_decl, walk_expr, walk_namespace, walk_pat, walk_ty_def, Visitor,
 };
@@ -20,6 +21,7 @@ struct Documentation {
 }
 
 pub(crate) fn get_hover(
+    position_encoding_kind: PositionEncodingKind,
     compilation: &Compilation,
     source_name: &str,
     offset: u32,
@@ -43,8 +45,16 @@ pub(crate) fn get_hover(
     hover_visitor.contents.map(|contents| Hover {
         contents,
         span: protocol::Span {
-            start: hover_visitor.start,
-            end: hover_visitor.end,
+            start: position(
+                position_encoding_kind,
+                &compilation.unit.sources,
+                hover_visitor.start,
+            ),
+            end: position(
+                position_encoding_kind,
+                &compilation.unit.sources,
+                hover_visitor.end,
+            ),
         },
     })
 }
