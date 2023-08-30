@@ -51,6 +51,7 @@ pub(crate) fn span_contains(span: Span, offset: u32) -> bool {
 pub(crate) fn position(
     position_encoding_kind: PositionEncodingKind,
     source_map: &SourceMap,
+    // should return source name too, useful for example for diagnostics
     offset: u32,
 ) -> Position {
     match position_encoding_kind {

@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use log::trace;
-use protocol::{CompletionList, Definition, Hover, Position};
+use protocol::{ls_Diagnostic, CompletionList, Definition, Hover, Position};
 use qsc::PackageType;
 use qsc_utils::Compilation;
 
@@ -14,6 +14,7 @@ use crate::qsc_utils::compile_document;
 
 pub mod completion;
 pub mod definition;
+mod diagnostic;
 mod display;
 pub mod hover;
 pub mod protocol;
@@ -47,12 +48,12 @@ struct DocumentState {
     pub compilation: Compilation,
 }
 
-type DiagnosticsReceiver<'a> = dyn FnMut(&str, u32, &[qsc::compile::Error]) + 'a;
+type DiagnosticsReceiver<'a> = dyn FnMut(&str, u32, &[ls_Diagnostic]) + 'a;
 
 impl<'a> LanguageService<'a> {
     pub fn new(
         position_encoding_kind: PositionEncodingKind,
-        diagnostics_receiver: impl FnMut(&str, u32, &[qsc::compile::Error]) + 'a,
+        diagnostics_receiver: impl FnMut(&str, u32, &[ls_Diagnostic]) + 'a,
     ) -> Self {
         LanguageService {
             position_encoding_kind,

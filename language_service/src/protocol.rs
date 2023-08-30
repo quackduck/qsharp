@@ -30,11 +30,12 @@ pub struct Range {
     pub end: Position,
 }
 
-pub struct Diagnostic {
+pub struct ls_Diagnostic {
     pub range: Range,
     pub severity: DiagnosticSeverity,
     pub code: Option<String>,
     pub message: String,
+    pub related_info: Vec<(String, Position)>,
 }
 
 pub enum DiagnosticSeverity {
