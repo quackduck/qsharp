@@ -471,7 +471,7 @@ test("language service diagnostics", async () => {
 }`,
     true // PackageType "exe"
   );
-  assert(gotDiagnostics);
+  assert(!gotDiagnostics);
 });
 
 test("language service diagnostics - web worker", async () => {
