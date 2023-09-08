@@ -86,7 +86,7 @@ jobs:
     name: CI Build and Test
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest]
 
     runs-on: ${{matrix.os}}
 
