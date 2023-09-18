@@ -280,7 +280,7 @@ fn expr_array_core(s: &mut Scanner) -> Result<Box<ExprKind>> {
     };
 
     if token(s, TokenKind::Comma).is_err() {
-        return Ok(Box::new(ExprKind::Array(vec![first].into_boxed_slice())));
+        return Ok(Box::new(ExprKind::Array(vec![*first].into_boxed_slice())));
     }
 
     let second = expr(s)?;
@@ -289,7 +289,7 @@ fn expr_array_core(s: &mut Scanner) -> Result<Box<ExprKind>> {
         return Ok(Box::new(ExprKind::ArrayRepeat(first, size)));
     }
 
-    let mut items = vec![first, second];
+    let mut items = vec![*first, *second];
     if token(s, TokenKind::Comma).is_ok() {
         items.append(&mut seq(s, expr)?.0);
     }
@@ -688,7 +688,7 @@ fn expr_as_pat(expr: Expr) -> Result<Box<Pat>> {
             let pats = exprs
                 .into_vec()
                 .into_iter()
-                .map(|e| expr_as_pat(*e))
+                .map(|e| expr_as_pat(e).map(|p| *p))
                 .collect::<Result<_>>()?;
             Ok(PatKind::Tuple(pats))
         }

@@ -22,11 +22,13 @@ impl FinalSep {
     pub(super) fn reify<T, U>(
         self,
         mut xs: Vec<T>,
-        mut as_paren: impl FnMut(T) -> U,
+        mut as_paren: impl FnMut(Box<T>) -> U,
         mut as_seq: impl FnMut(Box<[T]>) -> U,
     ) -> U {
         if self == Self::Missing && xs.len() == 1 {
-            as_paren(xs.pop().expect("vector should have exactly one item"))
+            as_paren(Box::new(
+                xs.pop().expect("vector should have exactly one item"),
+            ))
         } else {
             as_seq(xs.into_boxed_slice())
         }
@@ -125,7 +127,7 @@ pub(super) fn pat(s: &mut Scanner) -> Result<Box<Pat>> {
     let lo = s.peek().span.lo;
     let kind = if token(s, TokenKind::Keyword(Keyword::Underscore)).is_ok() {
         let ty = if token(s, TokenKind::Colon).is_ok() {
-            Some(Box::new(ty(s)?))
+            Some(ty(s)?)
         } else {
             None
         };
@@ -139,7 +141,7 @@ pub(super) fn pat(s: &mut Scanner) -> Result<Box<Pat>> {
     } else {
         let name = ident(s).map_err(|e| map_rule_name("pattern", e))?;
         let ty = if token(s, TokenKind::Colon).is_ok() {
-            Some(Box::new(ty(s)?))
+            Some(ty(s)?)
         } else {
             None
         };
@@ -170,11 +172,11 @@ pub(super) fn many<T>(s: &mut Scanner, mut p: impl Parser<T>) -> Result<Vec<T>> 
     Ok(xs)
 }
 
-pub(super) fn seq<T>(s: &mut Scanner, mut p: impl Parser<T>) -> Result<(Vec<T>, FinalSep)> {
+pub(super) fn seq<T>(s: &mut Scanner, mut p: impl Parser<Box<T>>) -> Result<(Vec<T>, FinalSep)> {
     let mut xs = Vec::new();
     let mut final_sep = FinalSep::Missing;
     while let Some(x) = opt(s, &mut p)? {
-        xs.push(x);
+        xs.push(*x);
         if token(s, TokenKind::Comma).is_ok() {
             final_sep = FinalSep::Present;
         } else {

@@ -320,7 +320,7 @@ pub enum TyDefKind {
     /// A parenthesized type definition.
     Paren(Box<TyDef>),
     /// A tuple.
-    Tuple(Box<[Box<TyDef>]>),
+    Tuple(Box<[TyDef]>),
 }
 
 impl Display for TyDefKind {
@@ -368,7 +368,7 @@ pub struct CallableDecl {
     /// The name of the callable.
     pub name: Box<Ident>,
     /// The generic parameters to the callable.
-    pub generics: Box<[Box<Ident>]>,
+    pub generics: Box<[Ident]>,
     /// The input to the callable.
     pub input: Box<Pat>,
     /// The return type of the callable.
@@ -705,7 +705,7 @@ impl Display for Expr {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum ExprKind {
     /// An array: `[a, b, c]`.
-    Array(Box<[Box<Expr>]>),
+    Array(Box<[Expr]>),
     /// An array constructed by repeating a value: `[a, size = b]`.
     ArrayRepeat(Box<Expr>, Box<Expr>),
     /// An assignment: `set a = b`.
@@ -760,7 +760,7 @@ pub enum ExprKind {
     /// A ternary operator.
     TernOp(TernOp, Box<Expr>, Box<Expr>, Box<Expr>),
     /// A tuple: `(a, b, c)`.
-    Tuple(Box<[Box<Expr>]>),
+    Tuple(Box<[Expr]>),
     /// A unary operator.
     UnOp(UnOp, Box<Expr>),
     /// A while loop: `while a { ... }`.
@@ -808,7 +808,7 @@ impl Display for ExprKind {
     }
 }
 
-fn display_array(mut indent: Indented<Formatter>, exprs: &[Box<Expr>]) -> fmt::Result {
+fn display_array(mut indent: Indented<Formatter>, exprs: &[Expr]) -> fmt::Result {
     write!(indent, "Array:")?;
     indent = set_indentation(indent, 1);
     for e in exprs {
@@ -1023,7 +1023,7 @@ fn display_tern_op(
     Ok(())
 }
 
-fn display_tuple(mut indent: Indented<Formatter>, exprs: &[Box<Expr>]) -> fmt::Result {
+fn display_tuple(mut indent: Indented<Formatter>, exprs: &[Expr]) -> fmt::Result {
     if exprs.is_empty() {
         write!(indent, "Unit")?;
     } else {
@@ -1089,7 +1089,7 @@ pub enum PatKind {
     /// Parentheses: `(a)`.
     Paren(Box<Pat>),
     /// A tuple: `(a, b, c)`.
-    Tuple(Box<[Box<Pat>]>),
+    Tuple(Box<[Pat]>),
 }
 
 impl Display for PatKind {
@@ -1161,7 +1161,7 @@ pub enum QubitInitKind {
     /// A single qubit: `Qubit()`.
     Single,
     /// A tuple: `(a, b, c)`.
-    Tuple(Box<[Box<QubitInit>]>),
+    Tuple(Box<[QubitInit]>),
 }
 
 impl Display for QubitInitKind {

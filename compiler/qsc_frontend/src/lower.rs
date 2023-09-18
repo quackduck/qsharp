@@ -809,7 +809,7 @@ fn is_partial_app(arg: &ast::Expr) -> bool {
     match arg.kind.as_ref() {
         ast::ExprKind::Hole => true,
         ast::ExprKind::Paren(inner) => is_partial_app(inner),
-        ast::ExprKind::Tuple(items) => items.iter().any(|i| is_partial_app(i)),
+        ast::ExprKind::Tuple(items) => items.iter().any(is_partial_app),
         _ => false,
     }
 }

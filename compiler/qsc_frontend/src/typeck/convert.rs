@@ -176,7 +176,7 @@ pub(super) fn ast_callable_scheme(
 }
 
 pub(crate) fn synthesize_callable_generics(
-    generics: &[Box<Ident>],
+    generics: &[Ident],
     input: &mut hir::Pat,
 ) -> Vec<GenericParam> {
     let mut params = ast_callable_generics(generics);
@@ -226,7 +226,7 @@ fn synthesize_functor_params_in_pat(
     }
 }
 
-fn ast_callable_generics(generics: &[Box<Ident>]) -> Vec<GenericParam> {
+fn ast_callable_generics(generics: &[Ident]) -> Vec<GenericParam> {
     generics.iter().map(|_param| GenericParam::Ty).collect()
 }
 

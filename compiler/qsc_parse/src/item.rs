@@ -234,11 +234,11 @@ fn parse_ty_def(s: &mut Scanner) -> Result<Box<TyDef>> {
     } else {
         let field_ty = ty(s)?;
         if token(s, TokenKind::Colon).is_ok() {
-            let name = ty_as_ident(field_ty)?;
+            let name = ty_as_ident(*field_ty)?;
             let field_ty = ty(s)?;
-            TyDefKind::Field(Some(name), Box::new(field_ty))
+            TyDefKind::Field(Some(name), field_ty)
         } else {
-            TyDefKind::Field(None, Box::new(field_ty))
+            TyDefKind::Field(None, field_ty)
         }
     };
 
@@ -307,7 +307,7 @@ fn parse_callable_decl(s: &mut Scanner) -> Result<Box<CallableDecl>> {
         name,
         generics: generics.into_boxed_slice(),
         input,
-        output: Box::new(output),
+        output,
         functors,
         body: Box::new(body),
     }))

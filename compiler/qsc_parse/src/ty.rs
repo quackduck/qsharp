@@ -18,10 +18,10 @@ use qsc_ast::ast::{
     CallableKind, Functor, FunctorExpr, FunctorExprKind, Ident, NodeId, SetOp, Ty, TyKind,
 };
 
-pub(super) fn ty(s: &mut Scanner) -> Result<Ty> {
+pub(super) fn ty(s: &mut Scanner) -> Result<Box<Ty>> {
     let lo = s.peek().span.lo;
     let lhs = base(s)?;
-    array_or_arrow(s, lhs, lo)
+    array_or_arrow(s, lhs, lo).map(Box::new)
 }
 
 pub(super) fn array_or_arrow(s: &mut Scanner<'_>, mut lhs: Ty, lo: u32) -> Result<Ty> {
@@ -43,12 +43,7 @@ pub(super) fn array_or_arrow(s: &mut Scanner<'_>, mut lhs: Ty, lo: u32) -> Resul
             lhs = Ty {
                 id: NodeId::default(),
                 span: s.span(lo),
-                kind: Box::new(TyKind::Arrow(
-                    kind,
-                    Box::new(lhs),
-                    Box::new(output),
-                    functors,
-                )),
+                kind: Box::new(TyKind::Arrow(kind, Box::new(lhs), output, functors)),
             }
         } else {
             break Ok(lhs);
@@ -91,7 +86,7 @@ fn base(s: &mut Scanner) -> Result<Ty> {
     } else if token(s, TokenKind::Open(Delim::Paren)).is_ok() {
         let (tys, final_sep) = seq(s, ty)?;
         token(s, TokenKind::Close(Delim::Paren))?;
-        Ok(final_sep.reify(tys, |t| TyKind::Paren(Box::new(t)), TyKind::Tuple))
+        Ok(final_sep.reify(tys, TyKind::Paren, TyKind::Tuple))
     } else {
         Err(Error(ErrorKind::Rule("type", s.peek().kind, s.peek().span)))
     }?;
