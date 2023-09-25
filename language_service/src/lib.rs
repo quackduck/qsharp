@@ -21,6 +21,7 @@ pub mod signature_help;
 mod test_utils;
 #[cfg(test)]
 mod tests;
+mod visitor;
 
 pub struct LanguageService<'a> {
     /// Workspace configuration can include compiler settings
