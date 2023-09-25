@@ -16,7 +16,10 @@ pub(super) struct NoBarrierError;
 /// This struct should never be clonable, and it should never be able to
 /// peek more than one token ahead, to maintain LL(1) enforcement.
 pub(super) struct Scanner<'a> {
-    input: &'a str,
+    input: Vec<&'a str>,
+    // the index of the input field on this struct
+    // for the module we are currently parsing
+    current_module_index: usize,
     tokens: Lexer<'a>,
     barriers: Vec<&'a [TokenKind]>,
     errors: Vec<Error>,
@@ -30,7 +33,8 @@ impl<'a> Scanner<'a> {
         let mut tokens = Lexer::new(input);
         let (peek, errors) = next_ok(&mut tokens);
         Self {
-            input,
+            input: vec![input],
+            current_module_index: 0,
             tokens,
             barriers: Vec::new(),
             errors: errors
@@ -47,8 +51,8 @@ impl<'a> Scanner<'a> {
         self.peek
     }
 
-    pub(super) fn read(&self) -> &'a str {
-        &self.input[self.peek.span]
+    pub(super) fn read(&self) -> &str {
+        &(*self.input[self.current_module_index])[self.peek.span]
     }
 
     pub(super) fn span(&self, from: u32) -> Span {
@@ -58,13 +62,42 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    fn input(&self) -> &'a str {
+        self.input[self.current_module_index]
+    }
+
     pub(super) fn advance(&mut self) {
         if self.peek.kind != TokenKind::Eof {
             self.offset = self.peek.span.hi;
             let (peek, errors) = next_ok(&mut self.tokens);
             self.errors
                 .extend(errors.into_iter().map(|e| Error(ErrorKind::Lex(e))));
-            self.peek = peek.unwrap_or_else(|| eof(self.input.len()));
+            // progress to the next module in the queue if we are done parsing this one
+            self.peek = match peek {
+                Some(tok) => tok,
+                None => {
+                    // are we out of modules?
+                    if self.current_module_index >= (self.input.len() - 1) {
+                        eof(self.input().len())
+                    } else {
+                        // if we still have another module to parse, reset the
+                        // Scanner on the next module.
+                        self.current_module_index += 1;
+                        let mut next_module_tokens = Lexer::new(&*(self.input()));
+                        let (peek, errors) = next_ok(&mut next_module_tokens);
+                        self.barriers = Vec::new();
+                        self.offset = 0;
+                        self.tokens = next_module_tokens;
+                        self.errors.append(
+                            &mut errors
+                                .into_iter()
+                                .map(|e| Error(ErrorKind::Lex(e)))
+                                .collect::<Vec<_>>(),
+                        );
+                        peek.unwrap_or_else(|| eof(self.input().len()))
+                    }
+                }
+            }
         }
     }
 

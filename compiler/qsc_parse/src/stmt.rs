@@ -32,6 +32,8 @@ pub(super) fn parse(s: &mut Scanner) -> Result<Box<Stmt>> {
         local
     } else if let Some(qubit) = opt(s, parse_qubit)? {
         qubit
+    } else if let Some(module) = opt(s, parse_module)? {
+        module
     } else {
         let e = expr_stmt(s)?;
         if token(s, TokenKind::Semi).is_ok() {
@@ -93,6 +95,10 @@ fn parse_local(s: &mut Scanner) -> Result<Box<StmtKind>> {
     let rhs = expr(s)?;
     recovering_semi(s)?;
     Ok(Box::new(StmtKind::Local(mutability, lhs, rhs)))
+}
+
+fn parse_module(s: &mut Scanner) -> Result<Box<StmtKind>> {
+    todo!()
 }
 
 fn parse_qubit(s: &mut Scanner) -> Result<Box<StmtKind>> {
