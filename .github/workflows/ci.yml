@@ -86,7 +86,7 @@ jobs:
         run: npm run check
 
   build:
-    name: Build and run unit tests
+    name: Build and test
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -119,7 +119,7 @@ jobs:
         run: python ./build.py --no-check
 
   integration-tests:
-    name: Run integration tests
+    name: Integration tests
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
