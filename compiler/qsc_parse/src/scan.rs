@@ -146,6 +146,10 @@ impl<'a> Scanner<'a> {
     pub(super) fn into_errors(self) -> Vec<Error> {
         self.errors
     }
+
+    pub(super) fn push_module(&mut self, module_source: &'a str) {
+        self.input.push(module_source)
+    }
 }
 
 fn eof(offset: usize) -> Token {
