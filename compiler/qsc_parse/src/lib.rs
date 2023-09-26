@@ -63,6 +63,9 @@ enum ErrorKind {
     #[error("expected callable inputs to be parenthesized")]
     #[diagnostic(code("Qsc.Parse.MissingParens"))]
     MissingParens(#[label] Span),
+    #[error("failed to load module file")]
+    #[diagnostic(code("Qsc.Parse.FailedToLoadModule"))]
+    FailedToLoadModule(#[label] Span),
 }
 
 impl ErrorKind {
@@ -76,6 +79,7 @@ impl ErrorKind {
             Self::Convert(expected, actual, span) => Self::Convert(expected, actual, span + offset),
             Self::MissingSemi(span) => Self::MissingSemi(span + offset),
             Self::MissingParens(span) => Self::MissingParens(span + offset),
+            Self::FailedToLoadModule(span) => Self::FailedToLoadModule(span + offset),
         }
     }
 }

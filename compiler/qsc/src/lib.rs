@@ -7,7 +7,9 @@ pub mod compile;
 mod error;
 pub mod interpret;
 
-pub use qsc_frontend::compile::{CompileUnit, PackageStore, SourceContents, SourceMap, SourceName};
+pub use qsc_frontend::compile::{CompileUnit, PackageStore};
+
+pub use qsc_fs_util::{SourceContents, SourceMap, SourceName};
 
 pub mod resolve {
     pub use qsc_frontend::resolve::Res;

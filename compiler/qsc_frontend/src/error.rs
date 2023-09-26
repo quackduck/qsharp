@@ -4,8 +4,8 @@
 #[cfg(test)]
 mod tests;
 
-use crate::compile::{Source, SourceMap};
 use miette::{Diagnostic, MietteError, MietteSpanContents, SourceCode, SourceSpan, SpanContents};
+use qsc_fs_util::{Source, SourceMap};
 use std::{
     error::Error,
     fmt::{self, Debug, Display, Formatter},

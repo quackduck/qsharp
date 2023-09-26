@@ -8,7 +8,7 @@ use miette::{Context, IntoDiagnostic};
 use qsc_ast::ast::Ident;
 
 use super::Result;
-use crate::scan::Scanner;
+use crate::{scan::Scanner, Error, ErrorKind};
 use qsc_fs_util::{SourceContents, SourceMap, SourceName};
 
 /// The file name, excluding the extension `.qs`
@@ -22,25 +22,31 @@ pub(crate) struct Module {}
 /// we first look either a sibling `foo.qs` file, or `foo/Module.qs`. It is an
 /// error to have _both_ files.
 pub(crate) fn load_module_file(s: &mut Scanner, tok: &Ident) -> Result<()> {
-    let sibling_result = load_sibling_module(tok)?;
-    let folder_result = load_folder_module(tok)?;
+    // first, we check for the existence of the two possibilities.
+    // We do this separately to disambiguate between failure to load
+    // the files and them not existing.
+    let module_name = tok.name.clone();
 
-    if sibling_result.is_some() && folder_result.is_some() {
-        todo!("Return error for having both module options");
+    let sibling_name = format!("{module_name}.qs");
+    let folder_name = format!("{module_name}/{MODULE_FILE_NAME}.qs");
+
+    let sibling_path = Path::new(&sibling_name);
+    let folder_path = Path::new(&folder_name);
+
+    let module_source = match (sibling_path.exists(), folder_path.exists()) {
+        (true, true) => {
+            todo!("Return error for having both module options");
+        }
+        (true, _) => read_source(sibling_path),
+        (_, true) => read_source(folder_path),
+        (_, _) => todo!("No corresponding module found error"),
     }
+    .map_err(|_| Error(ErrorKind::FailedToLoadModule(tok.span)))?;
 
-    todo!()
+    todo!("push module to scanner")
 }
 
-fn load_folder_module(tok: &Ident) -> Result<Option<Module>> {
-    todo!()
-}
-
-fn load_sibling_module(tok: &Ident) -> Result<Option<Module>> {
-    // TODO might need to track current path buf in `s`
-    let file_name = format!("{MODULE_FILE_NAME}.qs");
-    todo!()
-}
+// TODO this is copy-pasta from qsc.rs, dedup later
 fn read_source(path: impl AsRef<Path>) -> miette::Result<(SourceName, SourceContents)> {
     let path = path.as_ref();
     if path.as_os_str() == "-" {

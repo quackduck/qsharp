@@ -22,7 +22,7 @@ use qsc_data_structures::{
     index_map::{self, IndexMap},
     span::Span,
 };
-use qsc_fs_util::{Source, SourceContents, SourceMap, SourceName};
+pub use qsc_fs_util::{Source, SourceContents, SourceMap, SourceName};
 use qsc_hir::{
     assigner::Assigner as HirAssigner,
     global,
