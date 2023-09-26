@@ -1,0 +1,12 @@
+[package]
+name = "qsc_fs_util"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+miette = { workspace = true }

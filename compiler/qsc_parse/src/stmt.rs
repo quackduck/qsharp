@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+mod modules;
 #[cfg(test)]
 mod tests;
 
@@ -98,6 +99,12 @@ fn parse_local(s: &mut Scanner) -> Result<Box<StmtKind>> {
 }
 
 fn parse_module(s: &mut Scanner) -> Result<Box<StmtKind>> {
+    let _module_keyword = token(s, TokenKind::Keyword(Keyword::Module))?;
+    let module_name_token = ident(s)?;
+
+    // here, we look for either `module_name.rs` or `module_name/mod.rs`
+    modules::load_module_file(s, module_name_token)?;
+
     todo!()
 }
 

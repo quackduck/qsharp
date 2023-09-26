@@ -24,6 +24,19 @@ fn let_stmt() {
 }
 
 #[test]
+fn module_stmt() {
+    check(
+        parse,
+        "module foo;",
+        &expect![[r#"
+            Stmt _id_ [0-10]: Local (Immutable):
+                Pat _id_ [4-5]: Bind:
+                    Ident _id_ [4-5] "x"
+                Expr _id_ [8-9]: Lit: Int(2)"#]],
+    );
+}
+
+#[test]
 fn let_pat_match() {
     check(
         parse,

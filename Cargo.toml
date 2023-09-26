@@ -6,6 +6,7 @@ members = [
     "compiler/qsc_data_structures",
     "compiler/qsc_eval",
     "compiler/qsc_fir",
+    "compiler/qsc_fs_util",
     "compiler/qsc_frontend",
     "compiler/qsc_hir",
     "compiler/qsc_parse",

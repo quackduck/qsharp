@@ -846,6 +846,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "qsc_fs_util"
+version = "0.0.0"
+dependencies = [
+ "miette",
+]
+
+[[package]]
 name = "qsc_hir"
 version = "0.0.0"
 dependencies = [
@@ -865,6 +872,7 @@ dependencies = [
  "num-traits",
  "qsc_ast",
  "qsc_data_structures",
+ "qsc_fs_util",
  "thiserror",
 ]
 
