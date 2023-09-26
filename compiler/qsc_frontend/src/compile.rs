@@ -14,7 +14,6 @@ use crate::{
 };
 use miette::{Diagnostic, Report};
 use preprocess::TrackedName;
-use qsc__fs__util::{Source, SourceContents, SourceMap, SourceName};
 use qsc_ast::{
     assigner::Assigner as AstAssigner, ast, mut_visit::MutVisitor,
     validate::Validator as AstValidator, visit::Visitor as _,
@@ -23,6 +22,7 @@ use qsc_data_structures::{
     index_map::{self, IndexMap},
     span::Span,
 };
+use qsc_fs_util::{Source, SourceContents, SourceMap, SourceName};
 use qsc_hir::{
     assigner::Assigner as HirAssigner,
     global,
@@ -323,7 +323,7 @@ pub fn std(store: &PackageStore, target: TargetProfile) -> CompileUnit {
 fn parse_all(sources: &SourceMap) -> (ast::Package, Vec<qsc_parse::Error>) {
     let mut namespaces = Vec::new();
     let mut errors = Vec::new();
-    for source in &sources.sources {
+    for source in sources.sources() {
         let (source_namespaces, source_errors) = qsc_parse::namespaces(&source.contents);
         for mut namespace in source_namespaces {
             Offsetter(source.offset).visit_namespace(&mut namespace);
@@ -334,8 +334,7 @@ fn parse_all(sources: &SourceMap) -> (ast::Package, Vec<qsc_parse::Error>) {
     }
 
     let entry = sources
-        .entry
-        .as_ref()
+        .entry()
         .filter(|source| !source.contents.is_empty())
         .map(|source| {
             let (mut entry, entry_errors) = qsc_parse::expr(&source.contents);

@@ -7,6 +7,14 @@ pub struct SourceMap {
 }
 
 impl SourceMap {
+    pub fn sources(&self) -> &[Source] {
+        &self.sources[..]
+    }
+
+    pub fn entry(&self) -> Option<&Source> {
+        self.entry.as_ref()
+    }
+
     pub fn new(
         sources: impl IntoIterator<Item = (SourceName, SourceContents)>,
         entry: Option<Arc<str>>,

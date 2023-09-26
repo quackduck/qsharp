@@ -21,7 +21,7 @@ pub(crate) struct Module {}
 /// Loads a module file into the [Scanner]. For a given `module foo;` declaration,
 /// we first look either a sibling `foo.qs` file, or `foo/Module.qs`. It is an
 /// error to have _both_ files.
-pub(crate) fn load_module_file(s: &mut Scanner, tok: Box<Ident>) -> Result<()> {
+pub(crate) fn load_module_file(s: &mut Scanner, tok: &Ident) -> Result<()> {
     let sibling_result = load_sibling_module(tok)?;
     let folder_result = load_folder_module(tok)?;
 
@@ -32,11 +32,11 @@ pub(crate) fn load_module_file(s: &mut Scanner, tok: Box<Ident>) -> Result<()> {
     todo!()
 }
 
-fn load_folder_module(tok: Box<Ident>) -> Result<Option<Module>> {
+fn load_folder_module(tok: &Ident) -> Result<Option<Module>> {
     todo!()
 }
 
-fn load_sibling_module(tok: Box<Ident>) -> Result<Option<Module>> {
+fn load_sibling_module(tok: &Ident) -> Result<Option<Module>> {
     // TODO might need to track current path buf in `s`
     let file_name = format!("{MODULE_FILE_NAME}.qs");
     todo!()

@@ -103,7 +103,7 @@ fn parse_module(s: &mut Scanner) -> Result<Box<StmtKind>> {
     let module_name_token = ident(s)?;
 
     // here, we look for either `module_name.rs` or `module_name/mod.rs`
-    modules::load_module_file(s, module_name_token)?;
+    modules::load_module_file(s, &*module_name_token)?;
 
     todo!()
 }
