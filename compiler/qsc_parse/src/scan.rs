@@ -16,9 +16,9 @@ pub(super) struct NoBarrierError;
 /// This struct should never be clonable, and it should never be able to
 /// peek more than one token ahead, to maintain LL(1) enforcement.
 pub(super) struct Scanner<'a> {
-    input: Vec<&'a str>,
-    // the index of the input field on this struct
-    // for the module we are currently parsing
+    input: Vec<Source<'a>>,
+    /// the index of the input field on this struct
+    /// for the module we are currently parsing
     current_module_index: usize,
     tokens: Lexer<'a>,
     barriers: Vec<&'a [TokenKind]>,
@@ -28,12 +28,51 @@ pub(super) struct Scanner<'a> {
     offset: u32,
 }
 
+/// Text to parse as Q# can either come from the top-level invokation,
+/// or get enqueued in the parser as we discover `module` statements.
+/// this is basically a CoW (copy-on-write) struct but without any
+/// write semantics.
+pub(super) enum Source<'a> {
+    TopLevel(&'a str),
+    Module(String),
+}
+
+impl<'a> Source<'a> {
+    fn len(&self) -> usize {
+        match self {
+            Self::TopLevel(ref s) => s.len(),
+            Self::Module(ref s) => s.len(),
+        }
+    }
+
+    fn as_str<'b>(&'b self) -> &'a str
+    where
+        'b: 'a,
+    {
+        match self {
+            Self::TopLevel(s) => s,
+            Self::Module(ref s) => s.as_ref(),
+        }
+    }
+}
+
+impl std::ops::Index<Span> for Source<'_> {
+    type Output = str;
+
+    fn index(&self, index: Span) -> &Self::Output {
+        match self {
+            Self::TopLevel(s) => &s[index],
+            Self::Module(ref s) => &s[index],
+        }
+    }
+}
+
 impl<'a> Scanner<'a> {
     pub(super) fn new(input: &'a str) -> Self {
         let mut tokens = Lexer::new(input);
         let (peek, errors) = next_ok(&mut tokens);
         Self {
-            input: vec![input],
+            input: vec![Source::TopLevel(input)],
             current_module_index: 0,
             tokens,
             barriers: Vec::new(),
@@ -52,7 +91,7 @@ impl<'a> Scanner<'a> {
     }
 
     pub(super) fn read(&self) -> &str {
-        &(*self.input[self.current_module_index])[self.peek.span]
+        &(self.input())[self.peek.span]
     }
 
     pub(super) fn span(&self, from: u32) -> Span {
@@ -62,8 +101,8 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn input(&self) -> &'a str {
-        self.input[self.current_module_index]
+    fn input(&self) -> &Source {
+        &self.input[self.current_module_index]
     }
 
     pub(super) fn advance(&mut self) {
@@ -83,7 +122,8 @@ impl<'a> Scanner<'a> {
                         // if we still have another module to parse, reset the
                         // Scanner on the next module.
                         self.current_module_index += 1;
-                        let mut next_module_tokens = Lexer::new(&*(self.input()));
+                        let mut next_module_tokens =
+                            Lexer::new(self.input[self.current_module_index].as_str());
                         let (peek, errors) = next_ok(&mut next_module_tokens);
                         self.barriers = Vec::new();
                         self.offset = 0;
