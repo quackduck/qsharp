@@ -146,7 +146,7 @@ fn parse_doc(s: &mut Scanner) -> String {
 
         let lexeme = s.read();
         let prefix_len = if lexeme.starts_with("/// ") { 4 } else { 3 };
-        content += shorten(prefix_len, 0, lexeme);
+        content += shorten(prefix_len, 0, &*lexeme);
         s.advance();
     }
 

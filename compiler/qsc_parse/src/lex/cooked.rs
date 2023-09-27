@@ -25,6 +25,7 @@ use qsc_data_structures::span::Span;
 use std::{
     fmt::{self, Display, Formatter},
     iter::Peekable,
+    sync::Arc,
 };
 use thiserror::Error;
 
@@ -265,18 +266,18 @@ pub(crate) enum StringToken {
     Interpolated(InterpolatedStart, InterpolatedEnding),
 }
 
-pub(crate) struct Lexer<'a> {
-    input: &'a str,
+pub(crate) struct Lexer {
+    input: Arc<str>,
     len: u32,
 
     // This uses a `Peekable` iterator over the raw lexer, which allows for one token lookahead.
-    tokens: Peekable<raw::Lexer<'a>>,
+    tokens: Peekable<raw::Lexer>,
 }
 
-impl<'a> Lexer<'a> {
-    pub(crate) fn new(input: &'a str) -> Self {
+impl Lexer {
+    pub(crate) fn new(input: Arc<str>) -> Self {
         Self {
-            input,
+            input: input.clone(),
             len: input
                 .len()
                 .try_into()
@@ -505,7 +506,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl Iterator for Lexer<'_> {
+impl Iterator for Lexer {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {

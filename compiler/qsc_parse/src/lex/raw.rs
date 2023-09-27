@@ -17,10 +17,11 @@ mod tests;
 
 use super::{Delim, InterpolatedEnding, InterpolatedStart, Radix};
 use enum_iterator::Sequence;
+use owned_chars::OwnedCharIndices;
 use std::{
     fmt::{self, Display, Formatter, Write},
     iter::Peekable,
-    str::CharIndices,
+    sync::Arc,
 };
 
 /// A raw token.
@@ -167,16 +168,41 @@ pub(crate) enum CommentKind {
     Doc,
 }
 
-#[derive(Clone)]
-pub(super) struct Lexer<'a> {
-    chars: Peekable<CharIndices<'a>>,
+pub(super) struct Lexer {
+    chars: OwnedCharIndices,
     interpolation: u8,
 }
 
-impl<'a> Lexer<'a> {
-    pub(super) fn new(input: &'a str) -> Self {
+trait OwnedPeekable: Iterator {
+    fn next_if(
+        &mut self,
+        func: impl FnOnce(&<Self as Iterator>::Item) -> bool,
+    ) -> Option<<Self as Iterator>::Item>;
+    fn next_if_eq<T: PartialEq>(&mut self, expected: &T) -> Option<<Self as Iterator>::Item>;
+    fn peek(&self) -> Option<<Self as Iterator>::Item>;
+}
+
+impl OwnedPeekable for OwnedCharIndices {
+    fn next_if(
+        &mut self,
+        func: impl FnOnce(&<Self as Iterator>::Item) -> bool,
+    ) -> Option<<Self as Iterator>::Item> {
+        todo!()
+    }
+
+    fn next_if_eq<T: PartialEq>(&mut self, expected: &T) -> Option<<Self as Iterator>::Item> {
+        todo!()
+    }
+
+    fn peek(&self) -> Option<<Self as Iterator>::Item> {
+        todo!()
+    }
+}
+
+impl Lexer {
+    pub(super) fn new(input: Arc<str>) -> Self {
         Self {
-            chars: input.char_indices().peekable(),
+            chars: OwnedCharIndices::from_string(input.to_string()).peekable(),
             interpolation: 0,
         }
     }
@@ -370,7 +396,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl Iterator for Lexer<'_> {
+impl Iterator for Lexer {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,13 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use std::sync::Arc;
+
 use super::{Lexer, Token, TokenKind};
 use crate::lex::Delim;
 use expect_test::{expect, Expect};
 use qsc_data_structures::span::Span;
 
 fn check(input: &str, expect: &Expect) {
-    let actual: Vec<_> = Lexer::new(input).collect();
+    let actual: Vec<_> = Lexer::new(Arc::from(input)).collect();
     expect.assert_debug_eq(&actual);
 }
 
@@ -63,7 +65,7 @@ fn basic_ops() {
         let Some(input) = op_string(kind) else {
             continue;
         };
-        let actual: Vec<_> = Lexer::new(&input).collect();
+        let actual: Vec<_> = Lexer::new(Arc::from(input)).collect();
         let len = input
             .len()
             .try_into()
