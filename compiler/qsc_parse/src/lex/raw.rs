@@ -179,15 +179,36 @@ impl OwnedPeekable for Lexer {
         &mut self,
         func: impl FnOnce(&<Self as Iterator>::Item) -> bool,
     ) -> Option<<Self as Iterator>::Item> {
-        todo!()
+        let mut chars = BorrowedLexer::from(&*self);
+        match chars.next() {
+            Some(matched) if func(&matched) => {
+                // advance the real iterator since we matched
+                let _ = self.next();
+                Some(matched)
+            }
+            _ => None,
+        }
     }
 
-    fn next_if_eq<T: PartialEq>(&mut self, expected: &T) -> Option<<Self as Iterator>::Item> {
-        todo!()
+    fn next_if_eq(
+        &mut self,
+        expected: &<Self as Iterator>::Item,
+    ) -> Option<<Self as Iterator>::Item> {
+        let mut chars = BorrowedLexer::from(&*self);
+        match chars.next() {
+            Some(matched) if &matched == expected => {
+                // advance the real iterator since we matched
+                let _ = self.next();
+                Some(matched)
+            }
+
+            _ => None,
+        }
     }
 
     fn peek(&self) -> Option<<Self as Iterator>::Item> {
-        todo!()
+        let mut chars = BorrowedLexer::from(&*self).peekable();
+        chars.peek().cloned()
     }
 }
 
@@ -196,7 +217,10 @@ pub(super) trait OwnedPeekable: Iterator {
         &mut self,
         func: impl FnOnce(&<Self as Iterator>::Item) -> bool,
     ) -> Option<<Self as Iterator>::Item>;
-    fn next_if_eq<T: PartialEq>(&mut self, expected: &T) -> Option<<Self as Iterator>::Item>;
+    fn next_if_eq(
+        &mut self,
+        expected: &<Self as Iterator>::Item,
+    ) -> Option<<Self as Iterator>::Item>;
     fn peek(&self) -> Option<<Self as Iterator>::Item>;
 }
 
@@ -208,11 +232,14 @@ impl OwnedPeekable for OwnedCharIndices {
         todo!()
     }
 
-    fn next_if_eq<T: PartialEq>(&mut self, expected: &T) -> Option<<Self as Iterator>::Item> {
+    fn peek(&self) -> Option<<Self as Iterator>::Item> {
         todo!()
     }
 
-    fn peek(&self) -> Option<<Self as Iterator>::Item> {
+    fn next_if_eq(
+        &mut self,
+        expected: &<Self as Iterator>::Item,
+    ) -> Option<<Self as Iterator>::Item> {
         todo!()
     }
 }
