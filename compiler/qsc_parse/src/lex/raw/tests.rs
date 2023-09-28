@@ -1,19 +1,21 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use std::sync::Arc;
+
 use super::Lexer;
 use crate::lex::raw::{Single, Token, TokenKind};
 use expect_test::{expect, Expect};
 
 fn check(input: &str, expect: &Expect) {
-    let actual: Vec<_> = Lexer::new(input).collect();
+    let actual: Vec<_> = Lexer::new(Arc::from(input)).collect();
     expect.assert_debug_eq(&actual);
 }
 
 #[test]
 fn singles() {
     for single in enum_iterator::all::<Single>() {
-        let actual: Vec<_> = Lexer::new(&single.to_string()).collect();
+        let actual: Vec<_> = Lexer::new(Arc::from(single.to_string())).collect();
         let kind = TokenKind::Single(single);
         assert_eq!(actual, vec![Token { kind, offset: 0 }]);
     }

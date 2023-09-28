@@ -2,6 +2,7 @@ use std::{
     fs,
     io::{self, Read},
     path::Path,
+    sync::Arc,
 };
 
 use miette::{Context, IntoDiagnostic};
@@ -44,7 +45,7 @@ pub(crate) fn load_module_file(s: &mut Scanner, tok: &Ident) -> Result<()> {
     .map_err(|_| Error(ErrorKind::FailedToLoadModule(tok.span)))?;
 
     // TODO do we have to retain file names?
-    s.push_module(&*module_source.1);
+    s.push_module(module_source.1);
 
     todo!("push module to scanner")
 }

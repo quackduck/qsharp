@@ -86,7 +86,7 @@ impl<'a> Scanner<'a> {
                         // Scanner on the next module.
                         self.current_module_index += 1;
                         let mut next_module_tokens =
-                            Lexer::new(self.input[self.current_module_index]);
+                            Lexer::new(self.input[self.current_module_index].clone());
                         let (peek, errors) = next_ok(&mut next_module_tokens);
                         self.barriers = Vec::new();
                         self.offset = 0;
@@ -150,8 +150,8 @@ impl<'a> Scanner<'a> {
         self.errors
     }
 
-    pub(super) fn push_module(&mut self, module_source: &'a str) {
-        self.input.push(Arc::from(module_source))
+    pub(super) fn push_module(&mut self, module_source: Arc<str>) {
+        self.input.push(module_source)
     }
 }
 

@@ -65,7 +65,7 @@ fn basic_ops() {
         let Some(input) = op_string(kind) else {
             continue;
         };
-        let actual: Vec<_> = Lexer::new(Arc::from(input)).collect();
+        let actual: Vec<_> = Lexer::new(Arc::from(input.as_str())).collect();
         let len = input
             .len()
             .try_into()

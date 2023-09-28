@@ -15,7 +15,7 @@
 mod tests;
 
 use super::{
-    raw::{self, Number, Single},
+    raw::{self, BorrowedLexer, Number, OwnedPeekable, Single},
     Delim, InterpolatedEnding, InterpolatedStart, Radix,
 };
 use crate::keyword::Keyword;
@@ -24,7 +24,6 @@ use miette::Diagnostic;
 use qsc_data_structures::span::Span;
 use std::{
     fmt::{self, Display, Formatter},
-    iter::Peekable,
     sync::Arc,
 };
 use thiserror::Error;
@@ -271,7 +270,7 @@ pub(crate) struct Lexer {
     len: u32,
 
     // This uses a `Peekable` iterator over the raw lexer, which allows for one token lookahead.
-    tokens: Peekable<raw::Lexer>,
+    tokens: raw::Lexer,
 }
 
 impl Lexer {
@@ -282,7 +281,7 @@ impl Lexer {
                 .len()
                 .try_into()
                 .expect("input length should fit into u32"),
-            tokens: raw::Lexer::new(input).peekable(),
+            tokens: raw::Lexer::new(input),
         }
     }
 
@@ -305,8 +304,8 @@ impl Lexer {
     fn expect(&mut self, tok: raw::TokenKind, complete: TokenKind) -> Result<(), Error> {
         if self.next_if_eq(tok) {
             Ok(())
-        } else if let Some(&raw::Token { kind, offset }) = self.tokens.peek() {
-            let mut tokens = self.tokens.clone();
+        } else if let Some(raw::Token { kind, offset }) = self.tokens.peek() {
+            let mut tokens = BorrowedLexer::from(&self.tokens);
             let hi = tokens.nth(1).map_or_else(|| self.len, |t| t.offset);
             let span = Span { lo: offset, hi };
             Err(Error::Incomplete(tok, complete, kind, span))
@@ -324,8 +323,9 @@ impl Lexer {
             }
             raw::TokenKind::Comment(raw::CommentKind::Doc) => Ok(Some(TokenKind::DocComment)),
             raw::TokenKind::Ident => {
-                let ident = &self.input[(token.offset as usize)..(self.offset() as usize)];
-                Ok(Some(self.ident(ident)))
+                let offset = self.offset();
+                let ident = self.input[(token.offset as usize)..(offset as usize)].to_string();
+                Ok(Some(self.ident(&ident)))
             }
             raw::TokenKind::Number(number) => Ok(Some(number.into())),
             raw::TokenKind::Single(single) => self.single(single).map(Some),
