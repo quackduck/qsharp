@@ -229,18 +229,39 @@ impl OwnedPeekable for OwnedCharIndices {
         &mut self,
         func: impl FnOnce(&<Self as Iterator>::Item) -> bool,
     ) -> Option<<Self as Iterator>::Item> {
-        todo!()
-    }
-
-    fn peek(&self) -> Option<<Self as Iterator>::Item> {
-        todo!()
+        let mut chars = self.as_str().char_indices();
+        dbg!(&chars);
+        match dbg!(chars.next()) {
+            Some(matched) if dbg!(func(&dbg!(matched))) => {
+                // advance the real iterator since we matched
+                let _ = self.next();
+                dbg!(&self);
+                Some(matched)
+            }
+            _ => dbg!(None),
+        }
     }
 
     fn next_if_eq(
         &mut self,
         expected: &<Self as Iterator>::Item,
     ) -> Option<<Self as Iterator>::Item> {
-        todo!()
+        let mut chars = self.as_str().char_indices();
+        dbg!(&chars);
+        match chars.next() {
+            Some(matched) if &matched == expected => {
+                // advance the real iterator since we matched
+                let _ = self.next();
+                Some(matched)
+            }
+
+            _ => None,
+        }
+    }
+
+    fn peek(&self) -> Option<<Self as Iterator>::Item> {
+        let mut chars = self.as_str().char_indices().peekable();
+        chars.peek().cloned()
     }
 }
 
@@ -269,7 +290,7 @@ impl Lexer {
     /// Returns the second character ahead of the cursor without consuming it. This is slower
     /// than [`first`] and should be avoided when possible.
     fn second(&self) -> Option<char> {
-        let mut chars = self.to_char_indices();
+        let mut chars = self.as_char_indices();
         chars.next();
         chars.next().map(|i| i.1)
     }
@@ -444,12 +465,14 @@ impl Lexer {
     /// data. We clone an iterator that references the original string, and
     /// generate a char indices iter struct from that, but this function does not
     /// clone the original data.
-    pub(super) fn to_char_indices<'a>(&'a self) -> CharIndices<'a> {
+    pub(super) fn as_char_indices<'a>(&'a self) -> CharIndices<'a> {
         self.chars.as_str().char_indices()
     }
 }
 
+#[derive(Debug)]
 pub(super) struct BorrowedLexer<'a> {
+    offset: usize,
     chars: Peekable<CharIndices<'a>>,
     interpolation: u8,
 }
@@ -646,8 +669,15 @@ impl BorrowedLexer<'_> {
 
 impl<'a> From<&'a Lexer> for BorrowedLexer<'a> {
     fn from(value: &'a Lexer) -> Self {
+        // TODO fix this
+        let ix = value.next();
         BorrowedLexer {
-            chars: value.to_char_indices().peekable(),
+            offset: ix
+                .map(|x| x.offset)
+                .unwrap_or_default()
+                .try_into()
+                .expect("offset should fit into usize"),
+            chars: value.as_char_indices().peekable(),
             interpolation: 0,
         }
     }
@@ -674,7 +704,9 @@ impl Iterator for BorrowedLexer<'_> {
         };
         Some(Token {
             kind,
-            offset: offset.try_into().expect("offset should fit into u32"),
+            offset: (offset + self.offset)
+                .try_into()
+                .expect("offset should fit into u32"),
         })
     }
 }
