@@ -15,7 +15,7 @@
 mod tests;
 
 use super::{
-    raw::{self, BorrowedLexer, Number, OwnedPeekable, Single},
+    raw::{self, Number, Single},
     Delim, InterpolatedEnding, InterpolatedStart, Radix,
 };
 use crate::keyword::Keyword;
@@ -305,8 +305,10 @@ impl Lexer {
         if self.next_if_eq(tok) {
             Ok(())
         } else if let Some(raw::Token { kind, offset }) = self.tokens.peek() {
-            let mut tokens = BorrowedLexer::from(&self.tokens);
-            let hi = tokens.nth(1).map_or_else(|| self.len, |t| t.offset);
+            let hi = self
+                .tokens
+                .peek_second()
+                .map_or_else(|| self.len, |t| t.offset);
             let span = Span { lo: offset, hi };
             Err(Error::Incomplete(tok, complete, kind, span))
         } else {
