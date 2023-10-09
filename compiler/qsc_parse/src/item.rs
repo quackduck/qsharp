@@ -86,6 +86,12 @@ fn default(span: Span) -> Box<Item> {
     })
 }
 
+pub(super) fn parse_namespaces_and_modules(s: &mut Scanner) -> Result<Vec<ModuleOrNamespace>> {
+    let namespaces = many(s, parse_namespace_or_module)?;
+    recovering_token(s, TokenKind::Eof)?;
+    Ok(namespaces)
+}
+
 pub(super) fn parse_namespaces(s: &mut Scanner) -> Result<Vec<Namespace>> {
     let namespaces = many(s, parse_namespace)?;
     recovering_token(s, TokenKind::Eof)?;
@@ -136,7 +142,36 @@ fn parse_namespace(s: &mut Scanner) -> Result<Namespace> {
         items: items.into_boxed_slice(),
     })
 }
+fn parse_module(s: &mut Scanner) -> Result<Module> {
+    todo!()
+}
 
+pub enum ModuleOrNamespace {
+    Namespace(Namespace),
+    Module(Module),
+}
+
+impl ModuleOrNamespace {
+    pub fn is_module(&self) -> bool {
+        matches!(self, ModuleOrNamespace::Module(_))
+    }
+}
+
+pub struct Module {
+    pub path: std::path::PathBuf,
+}
+
+fn parse_namespace_or_module(s: &mut Scanner) -> Result<ModuleOrNamespace> {
+    let peek = s.peek();
+    match peek.kind {
+        TokenKind::Keyword(Keyword::Module) => parse_module(s).map(ModuleOrNamespace::Module),
+        // if it isn't a module, the last step is to see if we are parsing a namespace.
+        // if it isn't a namespace, we want to return an error anyway,
+        // so we pass anything that isn't a module into the parse namespace
+        // function.
+        _ => parse_namespace(s).map(ModuleOrNamespace::Namespace),
+    }
+}
 fn parse_doc(s: &mut Scanner) -> Option<String> {
     let mut content = String::new();
     while s.peek().kind == TokenKind::DocComment {

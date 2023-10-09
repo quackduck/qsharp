@@ -16,6 +16,7 @@ mod stmt;
 mod tests;
 mod ty;
 
+pub use item::{Module, ModuleOrNamespace};
 use lex::TokenKind;
 use miette::Diagnostic;
 use qsc_ast::ast::{Expr, Namespace, TopLevelNode};
@@ -87,6 +88,18 @@ type Result<T> = result::Result<T, Error>;
 trait Parser<T>: FnMut(&mut Scanner) -> Result<T> {}
 
 impl<T, F: FnMut(&mut Scanner) -> Result<T>> Parser<T> for F {}
+
+pub fn namespaces_and_modules(input: &str) -> (Vec<ModuleOrNamespace>, Vec<Error>) {
+    let mut scanner = Scanner::new(input);
+    match item::parse_namespaces_and_modules(&mut scanner) {
+        Ok(namespaces) => (namespaces, scanner.into_errors()),
+        Err(error) => {
+            let mut errors = scanner.into_errors();
+            errors.push(error);
+            (Vec::new(), errors)
+        }
+    }
+}
 
 pub fn namespaces(input: &str) -> (Vec<Namespace>, Vec<Error>) {
     let mut scanner = Scanner::new(input);
