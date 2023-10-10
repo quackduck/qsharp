@@ -5,7 +5,12 @@ mod tests;
 
 use qsc_parse::{Module, ModuleOrNamespace};
 use source::Source;
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -15,19 +20,19 @@ pub enum Error {
     MockedFsError,
 }
 
-pub fn find_dependency_paths(source: &str) -> Result<Vec<(PathBuf, String)>, Error> {
-    find_dependencies_with_loader(source, load_module)
-}
+// pub fn find_dependency_paths(source: &str) -> Result<Vec<(PathBuf, String)>, Error> {
+//     find_dependencies_with_loader(source, load_module)
+// }
 
 // TODO:
 // error handling
-fn find_dependencies_with_loader<FileLoader, E>(
+pub fn find_dependencies_with_loader<FileLoader>(
     source: &str,
     load_module: FileLoader,
-) -> Result<Vec<(PathBuf, String)>, Error>
+) -> miette::Result<Vec<(Arc<str>, Arc<str>)>>
 where
-    FileLoader: Fn(&PathBuf) -> Result<String, E>,
-    E: Into<Error>,
+    for<'a> FileLoader: Fn(&'a PathBuf) -> miette::Result<(Arc<str>, Arc<str>)>,
+    // P: AsRef<Path>,
 {
     let mut parsed_sources: HashMap<PathBuf, Source> = Default::default();
 
@@ -36,7 +41,7 @@ where
     initial_modules.dedup();
 
     for module in initial_modules {
-        let src = load_module(&module).map_err(Into::into)?;
+        let src = load_module(&module)?;
         parsed_sources.insert(module, Source::new(src));
     }
 
@@ -58,13 +63,13 @@ where
             .for_each(|(_, src)| src.inspected = true);
 
         for module in new_modules {
-            let src = load_module(&module).map_err(Into::into)?;
+            let src = load_module(&module)?;
             parsed_sources.insert(module, Source::new(src));
         }
     }
     Ok(parsed_sources
         .into_iter()
-        .map(|(path, source)| (path, source.source))
+        .map(|(path, source)| (path.to_string_lossy().into(), source.source))
         .collect())
 }
 

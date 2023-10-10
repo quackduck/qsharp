@@ -7,13 +7,13 @@ use expect_test::expect;
 #[macro_use]
 mod utils {
     use expect_test::Expect;
-    use std::{collections::HashMap, path::PathBuf};
+    use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
     pub type FileContents = String;
     pub type MockFileSystem = HashMap<PathBuf, FileContents>;
 
-    pub fn check(mut input: Vec<(PathBuf, String)>, expect: &Expect) {
-        input.sort();
+    pub fn check(mut input: Vec<(Arc<str>, Arc<str>)>, expect: &Expect) {
+        input.sort_by_key(|(a, b)| a.clone());
         expect.assert_debug_eq(&input);
     }
     /// Helper function to create the "mock filesystem" in the format of paths and file contents
@@ -30,12 +30,14 @@ mod utils {
     /// filesystem.
     macro_rules! module_loader {
         ($sources:expr) => {{
-            |path: &std::path::PathBuf| -> Result<String, crate::Error> {
-                $sources
-                    .get(path)
-                    .map(Clone::clone)
-                    .ok_or(crate::Error::MockedFsError)
-            }
+            |path: &std::path::PathBuf| -> miette::Result<(std::sync::Arc<str>, std::sync::Arc<str>)> {
+                        $sources
+                            .get(path)
+                            .map(|file|(std::sync::Arc::from(path.to_string_lossy()), file.as_str().into()))
+                            .ok_or_else(||
+                               miette::Report::msg("Failed to load from mock fs"))
+
+                    }
         }};
     }
 }
@@ -89,21 +91,21 @@ fn nested() {
     check(
         deps,
         &expect!([r#"
-        [
-            (
-                "bar/baz.qs",
-                "",
-            ),
-            (
-                "bar.qs",
-                "",
-            ),
-            (
-                "foo.qs",
-                "module \"bar.qs\"; module \"bar/baz.qs\";",
-            ),
-        ]
-    "#]),
+            [
+                (
+                    "bar.qs",
+                    "",
+                ),
+                (
+                    "bar/baz.qs",
+                    "",
+                ),
+                (
+                    "foo.qs",
+                    "module \"bar.qs\"; module \"bar/baz.qs\";",
+                ),
+            ]
+        "#]),
     );
 }
 
@@ -126,12 +128,12 @@ fn declared_from_different_files() {
         &expect!([r#"
             [
                 (
-                    "bar/baz.qs",
-                    "",
-                ),
-                (
                     "bar.qs",
                     "module \"bar/baz.qs\";",
+                ),
+                (
+                    "bar/baz.qs",
+                    "",
                 ),
                 (
                     "foo.qs",
