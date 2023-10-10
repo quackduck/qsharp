@@ -90,9 +90,8 @@ trait Parser<T>: FnMut(&mut Scanner) -> Result<T> {}
 impl<T, F: FnMut(&mut Scanner) -> Result<T>> Parser<T> for F {}
 
 pub fn namespaces_and_modules(input: &str) -> (Vec<ModuleOrNamespace>, Vec<Error>) {
-    println!("namespaces_and_modules");
     let mut scanner = Scanner::new(input);
-    match dbg!(item::parse_namespaces_and_modules(&mut scanner)) {
+    match item::parse_namespaces_and_modules(&mut scanner) {
         Ok(namespaces) => (namespaces, scanner.into_errors()),
         Err(error) => {
             let mut errors = scanner.into_errors();

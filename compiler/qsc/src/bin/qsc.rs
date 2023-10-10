@@ -90,11 +90,10 @@ fn main() -> miette::Result<ExitCode> {
         .flatten()
         .collect();
 
+    println!("Discovered {} module(s).", discovered_modules.len());
     sources.append(&mut discovered_modules);
     sources.sort();
     sources.dedup();
-
-    info!("Discovered {} modules.", discovered_modules.len());
 
     let entry = cli.entry.unwrap_or_default();
     let sources = SourceMap::new(sources, Some(entry.into()));

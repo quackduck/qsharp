@@ -77,10 +77,8 @@ fn parse_module_declarations(
     source: &str,
     parsed_sources: &HashMap<PathBuf, Source>,
 ) -> Vec<PathBuf> {
-    println!("parse_module_declarations");
     let ns_modules_res = qsc_parse::namespaces_and_modules(source);
     if !ns_modules_res.1.is_empty() {
-        dbg!(&ns_modules_res.1);
         todo!("Return error here")
     };
 

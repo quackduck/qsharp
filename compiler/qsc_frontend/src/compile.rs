@@ -32,6 +32,7 @@ use qsc_hir::{
     validate::Validator as HirValidator,
     visit::Visitor as _,
 };
+use qsc_parse::ModuleOrNamespace;
 use std::{fmt::Debug, str::FromStr, sync::Arc};
 use thiserror::Error;
 
@@ -454,8 +455,12 @@ fn parse_all(sources: &SourceMap) -> (ast::Package, Vec<qsc_parse::Error>) {
     let mut namespaces = Vec::new();
     let mut errors = Vec::new();
     for source in &sources.sources {
-        let (source_namespaces, source_errors) = qsc_parse::namespaces(&source.contents);
-        for mut namespace in source_namespaces {
+        let (source_namespaces, source_errors) =
+            qsc_parse::namespaces_and_modules(&source.contents);
+        for mut namespace in source_namespaces.into_iter().filter_map(|item| match item {
+            ModuleOrNamespace::Namespace(ns) => Some(ns),
+            _ => None,
+        }) {
             Offsetter(source.offset).visit_namespace(&mut namespace);
             namespaces.push(TopLevelNode::Namespace(namespace));
         }
