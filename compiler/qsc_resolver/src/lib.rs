@@ -1,29 +1,27 @@
-use qsc_parse::{Module, ModuleOrNamespace};
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+mod source;
+
 #[cfg(test)]
 mod tests;
 
-struct Source {
-    source: String,
-    /// whether or not this module has already had its dependencies inspected
-    inspected: bool,
+use qsc_parse::{Module, ModuleOrNamespace};
+use source::Source;
+use std::{collections::HashMap, fs, path::PathBuf};
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    ResolverIoError(#[from] std::io::Error),
+    #[error("Unable to load file from mocked fs")]
+    MockedFsError,
 }
 
-impl Source {
-    pub fn new(raw: String) -> Self {
-        Self {
-            source: raw,
-            inspected: false,
-        }
-    }
+pub fn find_dependency_paths(source: &str) -> Result<Vec<(PathBuf, String)>, Error> {
+    find_dependencies_with_loader(source, load_module)
 }
-#[derive(Debug)]
-pub struct Error;
 
 // TODO:
-// file loader injection
 // error handling
-pub fn find_dependency_paths<FileLoader, E>(
+fn find_dependencies_with_loader<FileLoader, E>(
     source: &str,
     load_module: FileLoader,
 ) -> Result<Vec<(PathBuf, String)>, Error>
@@ -74,7 +72,14 @@ fn parse_module_declarations(
     source: &str,
     parsed_sources: &HashMap<PathBuf, Source>,
 ) -> Vec<PathBuf> {
-    qsc_parse::namespaces_and_modules(source)
+    println!("parse_module_declarations");
+    let ns_modules_res = qsc_parse::namespaces_and_modules(source);
+    if !ns_modules_res.1.is_empty() {
+        dbg!(&ns_modules_res.1);
+        todo!("Return error here")
+    };
+
+    ns_modules_res
         .0
         .into_iter()
         .filter_map(|item| match item {
@@ -84,4 +89,10 @@ fn parse_module_declarations(
             _ => None,
         })
         .collect()
+}
+
+// This is where we implement file loading semantics. If we had a manifest file or notion of a project root,
+// this is where we could construct a module tree and locate files
+fn load_module(path: &PathBuf) -> Result<String, std::io::Error> {
+    fs::read_to_string(path)
 }

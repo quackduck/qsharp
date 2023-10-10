@@ -21,7 +21,7 @@ use crate::{
     ErrorKind,
 };
 use qsc_ast::ast::{
-    Attr, Block, CallableBody, CallableDecl, CallableKind, Ident, Item, ItemKind, Namespace,
+    Attr, Block, CallableBody, CallableDecl, CallableKind, Ident, Item, ItemKind, Lit, Namespace,
     NodeId, Pat, PatKind, Path, Spec, SpecBody, SpecDecl, SpecGen, StmtKind, TopLevelNode, Ty,
     TyDef, TyDefKind, TyKind, Visibility, VisibilityKind,
 };
@@ -142,10 +142,22 @@ fn parse_namespace(s: &mut Scanner) -> Result<Namespace> {
         items: items.into_boxed_slice(),
     })
 }
+
 fn parse_module(s: &mut Scanner) -> Result<Module> {
-    todo!()
+    token(s, TokenKind::Keyword(Keyword::Module))?;
+    let expr = expr(s)?;
+    token(s, TokenKind::Semi)?;
+    if let qsc_ast::ast::ExprKind::Lit(lit) = *expr.kind {
+        if let Lit::String(s) = *lit {
+            return Ok(Module {
+                path: (s.to_string()).into(),
+            });
+        }
+    }
+    todo!("err isnt a literal string")
 }
 
+#[derive(Debug)]
 pub enum ModuleOrNamespace {
     Namespace(Namespace),
     Module(Module),
@@ -157,6 +169,7 @@ impl ModuleOrNamespace {
     }
 }
 
+#[derive(Debug)]
 pub struct Module {
     pub path: std::path::PathBuf,
 }
