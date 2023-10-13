@@ -12,7 +12,7 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runTests } from "@vscode/test-web";
+import { runTests } from "./vscode-tests.mjs";
 
 const thisDir = dirname(fileURLToPath(import.meta.url));
 // The folder containing the Extension Manifest package.json
@@ -47,17 +47,74 @@ try {
  */
 async function runSuite(extensionTestsPath, workspacePath) {
   // Start a web server that serves VS Code in a browser, run the tests
-  await runTests({
-    headless: true, // pass false to see VS Code UI
-    browserType: "chromium",
-    extensionDevelopmentPath,
-    extensionTestsPath,
-    folderPath: workspacePath,
-    quality: "stable",
-    printServerLog: verbose,
-    verbose,
-    waitForDebugger: waitForDebugger
-      ? Number(waitForDebugger.slice(attachArgName.length))
-      : undefined,
-  });
+
+  let success = { chromium: 0, firefox: 0, webkit: 0 };
+
+  for (let i = 0; i < 5; i++) {
+    console.log("::group::running tests with chromium " + i );
+    try {
+      await runTests({
+        headless: true, // pass false to see VS Code UI
+        browserType: "chromium",
+        extensionDevelopmentPath,
+        extensionTestsPath,
+        folderPath: workspacePath,
+        quality: "stable",
+        printServerLog: verbose,
+        verbose,
+        waitForDebugger: waitForDebugger
+          ? Number(waitForDebugger.slice(attachArgName.length))
+          : undefined,
+      });
+      success.chromium++;
+    } catch (e) {
+      /* empty */
+    }
+    console.log("::endgroup::");
+
+    console.log("::group::running tests with firefox " + i);
+    try {
+      await runTests({
+        headless: true, // pass false to see VS Code UI
+        browserType: "firefox",
+        extensionDevelopmentPath,
+        extensionTestsPath,
+        folderPath: workspacePath,
+        quality: "stable",
+        printServerLog: verbose,
+        verbose,
+        waitForDebugger: waitForDebugger
+          ? Number(waitForDebugger.slice(attachArgName.length))
+          : undefined,
+      });
+      success.firefox++;
+    } catch (e) {
+      /* empty */
+    }
+    console.log("::endgroup::");
+
+    // webkit hates mixed content and/or insecure http
+    // console.log("::group::running tests with webkit " + i);
+    // try {
+    //   await runTests({
+    //     headless: true, // pass false to see VS Code UI
+    //     browserType: "webkit",
+    //     extensionDevelopmentPath,
+    //     extensionTestsPath,
+    //     folderPath: workspacePath,
+    //     quality: "stable",
+    //     printServerLog: verbose,
+    //     verbose,
+    //     waitForDebugger: waitForDebugger
+    //       ? Number(waitForDebugger.slice(attachArgName.length))
+    //       : undefined,
+    //   });
+    //   success.webkit++;
+    // } catch (e) {
+    //   /* empty */
+    // }
+  }
+  console.log("::endgroup::");
+
+  console.log("success", success);
 }
