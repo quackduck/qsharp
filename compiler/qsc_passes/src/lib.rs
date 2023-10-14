@@ -5,6 +5,7 @@
 #![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
 mod baseprofck;
+mod binding_time_analysis;
 mod borrowck;
 mod callable_limits;
 mod common;
@@ -99,6 +100,8 @@ impl PassContext {
 
         ReplaceQubitAllocation::new(core, assigner).visit_package(package);
         Validator::default().visit_package(package);
+
+        let binding_time_analysis_errors = binding_time_analysis::check_runtime_capabilities(package);
 
         let base_prof_errors = if self.target == TargetProfile::Base {
             baseprofck::check_base_profile_compliance(package)
