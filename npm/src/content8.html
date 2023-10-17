@@ -2,9 +2,9 @@
 <p>That being said, when you run Q# code on a quantum simulator instead of a physical quantum computer, you can use diagnostic functions that allow you to peek at the state of the quantum system. This is very useful both for learning and for debugging small Q# programs.</p>
 <p>The qubits aren&#39;t an ordinary data type, so the variables of this type have to be declared and initialized (&quot;allocated&quot;) a little differently.</p>
 <p>Freshly allocated qubits start out in state $|0\rangle$, and have to be returned to that state by the time they are released. If you attempt to release a qubit in any state other than $|0\rangle$, it will result in a runtime error. We will see why it is important later, when we look at multi-qubit systems.</p>
-<h2 id="visualizing-quantum-state">Visualizing Quantum State</h2>
+<h2>Visualizing Quantum State</h2>
 <p>Before we continue, let&#39;s learn some techniques to visualize the quantum state of our qubits.</p>
-<h3 id="display-the-quantum-state-of-a-single-qubit-program">Display the Quantum State of a Single-Qubit Program</h3>
+<h3>Display the Quantum State of a Single-Qubit Program</h3>
 <p>Let&#39;s start with a simple scenario: a program that acts on a single qubit. 
 The state of the quantum system used by this program can be represented as a complex vector of length 2, or, using Dirac notation,</p>
 <p>$$\begin{bmatrix} \alpha \\ \beta \end{bmatrix} = \alpha|0\rangle + \beta|1\rangle$$</p>
@@ -13,7 +13,7 @@ You would need to run the program repeatedly up to this point, perform a measure
 <p>However, at the early stages of quantum program development the program typically runs on a simulator - a classical program which simulates the behavior of a small quantum system while having complete information about its internal state. 
 You can take advantage of this to do some non-physical things, such as peeking at the internals of the quantum system to observe its exact state without disturbing it!</p>
 <p>The <a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.diagnostics.dumpmachine" target="_blank"><code>DumpMachine</code></a> function from the <a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.diagnostics" target="_blank"><code>Microsoft.Quantum.Diagnostics namespace</code></a> allows you to do exactly that. The output of <code>DumpMachine</code> is accurate up to a global phase, and remember that global phase does not have any physical meaning. When using <code>DumpMachine</code>, you may see that all probability amplitudes are multiplied by some complex number compared to the state you&#39;re expecting.</p>
-<h3 id="demo-dumpmachine-for-single-qubit-systems">Demo: DumpMachine For Single-Qubit Systems</h3>
+<h3>Demo: DumpMachine For Single-Qubit Systems</h3>
 <p>The following demo shows how to allocate a qubit and examine its state in Q#. You&#39;ll use <code>DumpMachine</code> to output the state of the system at any point in the program without affecting the state.</p>
 <blockquote>
 <p>Note that the Q# code doesn&#39;t have access to the output of <code>DumpMachine</code>, so you cannot write any non-physical code in Q#!</p>

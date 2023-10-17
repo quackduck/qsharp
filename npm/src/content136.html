@@ -9,7 +9,7 @@ This allows us to define quantum oracles based on their effect on the basis stat
 <p>For example, an oracle that implements a function that takes 2 bits of input will be defined using its effect on basis states $|00\rangle$, $|01\rangle$, $|10\rangle$, and $|11\rangle$.  </p>
 </blockquote>
 <p>There are two types of quantum oracles: phase oracles and marking oracles.  Let&#39;s take a closer look at them.</p>
-<h2 id="phase-oracles">Phase Oracles</h2>
+<h2>Phase Oracles</h2>
 <p>For a function $f: \{0,1\}^n \rightarrow \{0,1\}$, the phase oracle $U_{\text{phase}}$ encodes the the values $f(0)$ and $f(1)$ in the relative phases of basis states $\ket{0}$ and $\ket{1}$, respectively.</p>
 <p>$$U_{phase} |\vec{x}\rangle = (-1)^{f(x)}|\vec{x}\rangle$$</p>
 <p>Thus, the phase oracle $U_{\text{phase}}$ doesn&#39;t change the phase of the basis states for which $f(x)=0$, but multiplies the phase of the basis states for which $f(x)=1$ by $-1$.</p>

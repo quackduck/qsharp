@@ -1,5 +1,5 @@
 <p>There are certain properties common to all quantum gates. This section will introduce those properties, using the $X$ gate as an example.</p>
-<h2 id="matrix-representation">Matrix Representation</h2>
+<h2>Matrix Representation</h2>
 <p>Quantum gates are represented as $2^N \times 2^N$ unitary matrices, where $N$ is the number of qubits the gate operates on. 
 As a quick reminder, a unitary matrix is a square matrix whose inverse is its adjoint, thus $U^* U = UU^* = UU^{-1} = \mathbb{I}$.
 Single-qubit gates are represented by $2 \times 2$ matrices.
@@ -42,7 +42,7 @@ Matrix multiplication is associative, so this is equivalent to multiplying the $
 <p>All quantum gates are reversible - there is another gate which will undo any given gate&#39;s transformation, returning the qubit to its original state. 
 This means that when dealing with quantum gates, information about qubit states is never lost, as opposed to classical logic gates, some of which destroy information. 
 Quantum gates are represented by unitary matrices, so the inverse of a gate is its adjoint; these terms are also used interchangeably in quantum computing.</p>
-<h2 id="effects-on-basis-states">Effects on Basis States</h2>
+<h2>Effects on Basis States</h2>
 <p>There is a simple way to find out what a gate does to the two computational basis states $|0\rangle$ and $|1\rangle$. Consider an arbitrary gate:</p>
 <p>$$A = \begin{bmatrix} \epsilon &amp; \zeta \\ \eta &amp; \mu \end{bmatrix}$$</p>
 <p>Watch what happens when we apply it to these states:</p>
