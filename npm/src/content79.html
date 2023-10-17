@@ -1,0 +1,37 @@
+<p>In this section, we will discuss the simplest type of qubit measurements - measurements in the computational basis. This is the &quot;default&quot; type of measurements. Unless otherwise specified, &quot;measurement&quot; refers to this type.</p>
+<p>The state $\ket{\psi}$ of a single qubit can always be expressed in Dirac notation as:
+$$\ket{\psi} = \alpha \ket{0} + \beta \ket{1}$$
+where $\alpha$ and $\beta$ are complex numbers, and the state is normalized, $|\alpha|^2 + |\beta|^2 = 1$.</p>
+<p>To get some information about the qubit state, we can measure the qubit. Similar to the classical case of measuring a bit, the outcome of a measurement can be $0$ or $1$. However, unlike the classical case, quantum measurement is a probabilistic process.</p>
+<p>The probabilities of the measurement outcomes being $0$ and $1$ are $|\alpha|^2$ and $|\beta|^2$, respectively. Additionally, the state of the qubit is modified by the measurement - if the outcome of the measurement is $0$, then the post-measurement state of the qubit is $\ket{0}$, and if the outcome is $1$, the state is $\ket{1}$. In quantum mechanics, this is referred to as the <a href="https://en.wikipedia.org/wiki/Wave_function_collapse" target="_blank">collapse of the wave function</a>.</p>
+<p>The outcomes of computational basis measurements and their probabilities are summarized in the table below:</p>
+<table>
+    <tr>
+        <th>Measurement outcome</th>
+        <th>Probability of outcome</th>
+        <th>State after measurement</th>
+    </tr>
+    <tr>
+        <td>$0$</td>
+        <td>$|\alpha|^2$</td>
+        <td>$\ket 0$</td>
+    </tr>
+    <tr>
+        <td>$1$</td>
+        <td>$|\beta|^2$</td>
+        <td>$\ket 1$</td>
+    </tr>
+</table>
+
+<blockquote>
+<p>Unlike quantum gates which are unitary and reversible operations, measurements are neither unitary nor reversible. Since the outcomes of a measurement are probabilistic, any two isolated qubits which are initially prepared in identical superposition states are in general not guaranteed to have the same measurement outcomes after each qubit has been measured separately. As we will see below, measurements are modeled by projection operators instead of unitary operators.</p>
+<p>Additionally, the assumption of the wave function being <strong>normalized</strong> is important, since the probability outcomes must sum up to $1$. If the wave function is not normalized, it is important to normalize it first in order to obtain the correct measurement probabilities.</p>
+</blockquote>
+<h2>🔎 Analyze</h2>
+<p>The qubit is in the following state:
+$$\ket \psi = 0.6 \ket 0 + 0.8 \ket 1 \equiv \begin{bmatrix} 0.6 \\ 0.8\end{bmatrix}.$$</p>
+<p>If this qubit is measured in the computational basis, what are the outcome probabilities?</p>
+<details>
+<summary><b>Solution</b></summary>
+The given state $\ket \psi$ is normalized, since $0.6^2 + 0.8^2 = 1$. Hence, the probability of measuring $0$ is $|0.6|^2 = 0.36$, and the probability of measuring $1$ is $|0.8|^2 = 0.64$.
+</details>

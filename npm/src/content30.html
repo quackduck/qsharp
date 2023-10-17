@@ -1,0 +1,42 @@
+<p>The next two gates are known as phase shift gates. They apply a phase to the $|1\rangle$ state, and leave the $|0\rangle$ state unchanged.</p>
+<table>
+  <tr>
+    <th>Gate</th>
+    <th>Matrix</th>
+    <th>Ket-Bra</th>
+    <th>Applying to $|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$</th>
+    <th>Applying to basis states</th>
+    <th>Q# Documentation</th>
+  </tr>
+  <tr>
+    <td>$S$</td>
+    <td>$\begin{bmatrix} 1 & 0 \\\ 0 & i \end{bmatrix}$</td>
+    <td>$|0\rangle\langle0| + i|1\rangle\langle1|$</td>
+    <td>$S|\psi\rangle = \alpha|0\rangle + i\beta|1\rangle$</td>
+    <td>
+      $S|0\rangle = |0\rangle$<br>
+      $S|1\rangle = i|1\rangle$<br>
+      $S|+\rangle = |i\rangle$<br>
+      $S|-\rangle = |-i\rangle$<br>
+      $S|i\rangle = |-\rangle$<br>
+      $S|-i\rangle = |+\rangle$<br>
+    </td>
+    <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.s" target="_blank">S</a></td>
+  </tr>
+  <tr>
+    <td>$T$</td>
+    <td>$\begin{bmatrix} 1 & 0 \\\ 0 & e^{i\pi/4} \end{bmatrix}$</td>
+    <td>$|0\rangle\langle0| + e^{i\pi/4}|1\rangle$$\langle1|$</td>
+    <td>$T|\psi\rangle = \alpha|0\rangle + e^{i\pi/4} \beta |1\rangle$</td>
+    <td>
+      $T|0\rangle = |0\rangle$<br>
+      $T|1\rangle = e^{i\pi/4}|1\rangle$
+    </td>
+    <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.t" target="_blank">T</a></td>
+  </tr>
+</table>
+
+<blockquote>
+<p>Notice that applying the $T$ gate twice is equivalent to applying the $S$ gate, and applying the $S$ gate twice is equivalent to applying the $Z$ gate: 
+$$T^2 = S, S^2 = Z$$</p>
+</blockquote>

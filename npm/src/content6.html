@@ -1,0 +1,25 @@
+<p>Dirac notation is a shorthand notation that eases writing quantum states and computing linear algebra. In Dirac notation, a vector is denoted by a symbol called a <strong>ket</strong>. For example, a qubit in state $0$ is represented by the ket $|0\rangle$, and a qubit in state $1$ is represented by the ket $|1\rangle$:</p>
+<table>
+    <tr>
+        <td>$$|0\rangle = \begin{bmatrix} 1 \\\ 0 \end{bmatrix}$$</td>
+        <td>$$|1\rangle = \begin{bmatrix} 0 \\\ 1 \end{bmatrix}$$</td>
+    </tr>
+</table>
+
+<p>These two kets represent basis states, so they can be used to represent any other state:</p>
+<p>$$\begin{bmatrix} \alpha \\ \beta \end{bmatrix} = \alpha|0\rangle + \beta|1\rangle$$</p>
+<p>Dirac notation is not only restricted to vectors $0$ and $1$, but it can be used to represent any arbitrary vector. For example the vector $\psi$ can be written as:</p>
+<p>$$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$$</p>
+<p>Other examples of vector states represented in Dirac notation are:</p>
+<table>
+    <tr>
+        <td>$$|+\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle + |1\rangle\big)$$</td>
+        <td>$$|-\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle - |1\rangle\big)$$</td>
+    </tr>
+    <tr>
+        <td>$$|i\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle + i|1\rangle\big)$$</td>
+        <td>$$|-i\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle - i|1\rangle\big)$$</td>
+    </tr>
+</table>
+
+<p>We will learn more about Dirac notation in the next katas, as we introduce quantum gates and multi-qubit systems.</p>

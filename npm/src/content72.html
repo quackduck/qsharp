@@ -1,0 +1,60 @@
+<p>Typically, the term &quot;controlled <code>U</code> gate&quot; refers to the type of gate we&#39;ve described previously, which applies the gate <code>U</code> only if the control qubit(s) are in the $|1\rangle$ state.</p>
+<p>It is possible, however, to define variants of controlled gates that use different states as control states.
+For example, an <strong>anti-controlled</strong> <code>U</code> gate (sometimes called <strong>zero-controlled</strong>) applies a gate only if the control qubit is in the $|0\rangle$ state.
+It is also possible to define control conditions in other bases, for example, applying the gate if the control qubit is in the $|+\rangle$ state.</p>
+<p>All the variants of controlled gates can be expressed in terms of the controls described in previous sections, using the following sequence of steps:</p>
+<ul>
+<li>First, apply a transformation on control qubits that will transform the state you want to use as control into the $|1...1\rangle$ state.</li>
+<li>Apply the regular controlled version of the gate.</li>
+<li>Finally, undo the transformation on control qubits from the first step using the adjoint version of it.</li>
+</ul>
+<blockquote>
+<p>Why do we need this last step? Remember that controlled gates are defined in terms of their effect on the basis states:
+we apply the gate on the target qubit if and only if the control qubit is in the state we want to control on, and we don&#39;t change the state of the control qubit at all.
+If we don&#39;t undo the transformation we did on the first step, applying our gate to a basis state will modify not only the state of the target qubit but also the state of the control qubit, which is not what we&#39;re looking for.</p>
+<p>For example, consider an anti-controlled <code>X</code> gate - a gate that should apply an $X$ gate to the second qubit if the first qubit is in the $|0\rangle$ state.
+Here is the effect we expect this gate to have on each of the 2-qubit basis states:</p>
+<table>
+  <tr>
+    <th>Input state</th>
+    <th>Output state</th>
+  </tr>
+  <tr>
+    <td>$|00\rangle$</td>
+    <td>$|01\rangle$</td>
+  </tr>
+  <tr>
+    <td>$|01\rangle$</td>
+    <td>$|00\rangle$</td>
+  </tr>
+  <tr>
+    <td>$|10\rangle$</td>
+    <td>$|10\rangle$</td>
+  </tr>
+  <tr>
+    <td>$|11\rangle$</td>
+    <td>$|11\rangle$</td>
+  </tr></blockquote>
+</table>
+
+<blockquote>
+<p>Let&#39;s apply the anti-controlled <code>X</code> gate to the $|00\rangle$ state step by step:</p>
+<ol>
+<li>Transform the state of the control qubit to $|1\rangle$: we can do that by applying the $X$ gate to the first qubit:
+$$|00\rangle \rightarrow |10\rangle$$</li>
+<li>Apply the regular <code>CNOT</code> gate:
+$$|10\rangle \rightarrow |11\rangle$$</li>
+<li>Now, if we don&#39;t undo the change we did on the first step, we&#39;ll end up with a gate that transforms $|00\rangle$ into $|11\rangle$, which is not the transformation we&#39;re trying to implement.
+However, if we undo it by applying the <code>X</code> gate to the first qubit again, we&#39;ll get the correct state:
+$$|11\rangle \rightarrow |01\rangle$$</li>
+</ol>
+<p>You can check that getting the right behavior of the operation on the rest of the basis states also requires that last step.</p>
+</blockquote>
+<p>Finally, let&#39;s take a look at a very useful operation <a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.canon.controlledonbitstring" target="_blank">ControlledOnBitString</a> provided by the Q# Standard library.
+It defines a variant of a gate controlled on a state specified by a bit mask; for example, bit mask <code>[true, false]</code> means that the gate should be applied only if the two control qubits are in the $|10\rangle$ state.</p>
+<p>The sequence of steps that implement this variant are:</p>
+<ol>
+<li>Apply the <code>X</code> gate to each control qubit that corresponds to a <code>false</code> element of the bit mask (in the example, that&#39;s just the second qubit). After this, if the control qubits started in the $|10\rangle$ state, they&#39;ll end up in the $|11\rangle$ state, and if they started in any other state, they&#39;ll end up in any state but $|11\rangle$.</li>
+<li>Apply the regular controlled version of the gate.</li>
+<li>Apply the $X$ gate to the same qubits to return them to their original state.</li>
+</ol>

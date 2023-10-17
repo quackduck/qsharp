@@ -1,0 +1,64 @@
+<p>The next few gates are parametrized: their exact behavior depends on a numeric parameter - an angle $\theta$, given in radians. 
+These gates are the $X$ rotation gate $R_x(\theta)$, $Y$ rotation gate $R_y(\theta)$, $Z$ rotation gate $R_z(\theta)$, and the arbitrary phase gate $R_1(\theta)$. 
+Note that for the first three gates the parameter $\theta$ is multiplied by $\frac{1}{2}$ within the gate&#39;s matrix.</p>
+<blockquote>
+<p>These gates are known as rotation gates, because they represent rotations around various axes on the Bloch sphere. The Bloch sphere is a way of representing the qubit states visually, mapping them onto the surface of a sphere. 
+Unfortunately, this visualization isn&#39;t very useful beyond single-qubit states, which is why we have opted not to go into details in this kata.
+If you are curious about it, you can learn more in <a href="https://en.wikipedia.org/wiki/Bloch_sphere" target="_blank">this Wikipedia article</a>.</p>
+</blockquote>
+<table>
+  <tr>
+    <th>Gate</th>
+    <th>Matrix</th>
+    <th>Applying to $|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$</th>
+    <th>Applying to basis states</th>
+    <th>Q# Documentation</th>
+  </tr>
+  <tr>
+    <td>$R_x(\theta)$</td>
+    <td>$\begin{bmatrix} \cos\frac{\theta}{2} & -i\sin\frac{\theta}{2} \\\ -i\sin\frac{\theta}{2} & \cos\frac{\theta}{2} \end{bmatrix}$</td>
+    <td>$R_x(\theta)|\psi\rangle = (\alpha\cos\frac{\theta}{2} - i\beta\sin\frac{\theta}{2})|0\rangle + (\beta\cos\frac{\theta}{2} - i\alpha\sin\frac{\theta}{2})|1\rangle$</td>
+    <td>
+      $R_x(\theta)|0\rangle = \cos\frac{\theta}{2}|0\rangle - i\sin\frac{\theta}{2}|1\rangle$<br>
+      $R_x(\theta)|1\rangle = \cos\frac{\theta}{2}|1\rangle - i\sin\frac{\theta}{2}|0\rangle$
+    </td>
+    <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.rx" target="_blank">Rx</a></td>
+  </tr>
+  <tr>
+    <td>$R_y(\theta)$</td>
+    <td>$\begin{bmatrix} \cos\frac{\theta}{2} & -\sin\frac{\theta}{2} \\\ \sin\frac{\theta}{2} & \cos\frac{\theta}{2} \end{bmatrix}$</td>
+    <td>$R_y(\theta)|\psi\rangle = (\alpha\cos\frac{\theta}{2} - \beta\sin\frac{\theta}{2})|0\rangle + (\beta\cos\frac{\theta}{2} + \alpha\sin\frac{\theta}{2})|1\rangle$</td>
+    <td>
+      $R_y(\theta)|0\rangle = \cos\frac{\theta}{2}|0\rangle + \sin\frac{\theta}{2}|1\rangle$<br>
+      $R_y(\theta)|1\rangle = \cos\frac{\theta}{2}|1\rangle - \sin\frac{\theta}{2}|0\rangle$
+    </td>
+    <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.ry" target="_blank">Ry</a></td>
+  </tr>
+  <tr>
+    <td>$R_z(\theta)$</td>
+    <td>$\begin{bmatrix} e^{-i\theta/2} & 0 \\\ 0 & e^{i\theta/2} \end{bmatrix}$</td>
+    <td>$R_z(\theta)|\psi\rangle = \alpha e^{-i\theta/2}|0\rangle + \beta e^{i\theta/2}|1\rangle$</td>
+    <td>
+      $R_z(\theta)|0\rangle = e^{-i\theta/2}|0\rangle$<br>
+      $R_z(\theta)|1\rangle = e^{i\theta/2}|1\rangle$
+    </td>
+    <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.rz" target="_blank">Rz</a></td>
+  </tr>
+  <tr>
+    <td>$R_1(\theta)$</td>
+    <td>$\begin{bmatrix} 1 & 0 \\\ 0 & e^{i\theta} \end{bmatrix}$</td>
+    <td>$R_1(\theta)|\psi\rangle = \alpha|0\rangle + \beta e^{i\theta}|1\rangle$</td>
+    <td>
+      $R_1(\theta)|0\rangle = |0\rangle$<br>
+      $R_1(\theta)|1\rangle = e^{i\theta}|1\rangle$
+    </td>  
+    <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.r1" target="_blank">R1</a></td>
+  </tr>
+</table>
+
+<p>You have already encountered some special cases of the $R_1$ gate: </p>
+<p>$$T = R_1(\frac{\pi}{4}), S = R_1(\frac{\pi}{2}), Z = R_1(\pi)$$</p>
+<p>In addition, this gate is closely related to the $R_z$ gate: applying $R_1$ gate is equivalent to applying the $R_z$ gate, and then applying a global phase: </p>
+<p>$$R_1(\theta) = e^{i\theta/2}R_z(\theta)$$</p>
+<p>In addition, the rotation gates are very closely related to their respective Pauli gates: </p>
+<p>$$X = iR_x(\pi), Y = iR_y(\pi), Z = iR_z(\pi)$$</p>

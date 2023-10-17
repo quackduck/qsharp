@@ -1,0 +1,18 @@
+<p>An oracle in the quantum world is a &quot;black box&quot; operation that is used as input to an algorithm (such as Deutsch-Jozsa algorithm or Grover&#39;s search algorithm). 
+Many quantum algorithms assume an oracle implementation of some classical function as input, but this is a very strong assumption - sometimes implementing the oracle for a function is a lot more complex than the algorithm that will use this oracle!<br>In this kata, you will learn the properties of quantum oracles and how to implement them.</p>
+<p>A quantum oracle implements a function $f: \{0,1\}^n \rightarrow \{0,1\}^m$, where the input is $n$-bits of the form $x = (x_{0}, x_{1}, \dots, x_{n-1})$. In most commonly used cases $m=1$, that is, the function can return values $0$ or $1$. In this kata, we will focus on this class of functions.</p>
+<p>Quantum oracles operate on qubit arrays (and can take classical parameters as well).  The classical input is encoded into the state of an $n$-qubit register:<br>$$|x\rangle = |x_0\rangle \otimes |x_1\rangle \otimes ... \otimes |x_{n-1}\rangle,$$ 
+where $|x_i\rangle$ represents the state of the $i$-th qubit.  </p>
+<p>Oracles must be unitary transformations, and follow the same rules of linear algebra as other quantum operations.
+This allows us to define quantum oracles based on their effect on the basis states - tensor products of single-qubit basis states $|0\rangle$ and $|1\rangle$. </p>
+<blockquote>
+<p>For example, an oracle that implements a function that takes 2 bits of input will be defined using its effect on basis states $|00\rangle$, $|01\rangle$, $|10\rangle$, and $|11\rangle$.  </p>
+</blockquote>
+<p>There are two types of quantum oracles: phase oracles and marking oracles.  Let&#39;s take a closer look at them.</p>
+<h2>Phase Oracles</h2>
+<p>For a function $f: \{0,1\}^n \rightarrow \{0,1\}$, the phase oracle $U_{\text{phase}}$ encodes the the values $f(0)$ and $f(1)$ in the relative phases of basis states $\ket{0}$ and $\ket{1}$, respectively.</p>
+<p>$$U_{phase} |\vec{x}\rangle = (-1)^{f(x)}|\vec{x}\rangle$$</p>
+<p>Thus, the phase oracle $U_{\text{phase}}$ doesn&#39;t change the phase of the basis states for which $f(x)=0$, but multiplies the phase of the basis states for which $f(x)=1$ by $-1$.</p>
+<p>The effect of such an oracle on any single basis state is not particularly interesting: it just adds a global phase which is not something you can observe. However, if you apply this oracle to a <em>superposition</em> of basis states, its effect becomes noticeable. 
+Remember that quantum operations are linear: if you define the effect of an operation on the basis states, you&#39;ll be able to deduce its effect on superposition states (which are just linear combinations of the basis states) using its linearity. </p>
+<p>A phase oracle doesn&#39;t have an &quot;output&quot;, unlike the function it implements; the effect of the oracle application is the change in the state of the system.</p>

@@ -247,8 +247,11 @@ function createExample(baseFolderPath, properties) {
   };
 }
 
+let index = 1;
 function createTextContent(markdown) {
   const html = marked(markdown);
+  // Just dump these out for easy diffing against the baseline
+  writeFileSync(join(katasGeneratedContentPath, `content${index++}.html`), html);
   return { type: "text-content", asHtml: html, asMarkdown: markdown };
 }
 

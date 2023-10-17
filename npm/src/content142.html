@@ -1,0 +1,8 @@
+<blockquote>
+<p>Let&#39;s compare the initial state to the final state from the above demo. 
+In the initial state we had a tensor product of an equal superposition of all 3-qubit basis states and the state $|0\rangle$.  In the final state, this is no longer the case. 
+The basis states $|010\rangle \otimes |0\rangle$ and $|101\rangle \otimes |0\rangle$ no longer have non-zero amplitudes, and instead $|010\rangle \otimes |1\rangle$ and $|101\rangle \otimes |1\rangle$ have non-zero amplitudes.</p>
+<p>This is exactly the result that we expect.  Recall our function $f(x)$: $f(x)=1$ if and only if $x=010$ or $x=101$.  The first three qubits (variable <code>x</code>) represent the input state $|x\rangle$, and the last qubit (variable <code>y</code>) represents the output state $|y\rangle$.  Thus when we have the two basis states, $|x\rangle=|010\rangle$ or $|x\rangle=|101\rangle$, we will flip the state of the qubit $|y\rangle$, causing these two initial states to be tensored with $|1\rangle$ in the final state where originally they were tensored with $|0\rangle$.</p>
+<p>Since the rest of the basis states correspond to $f(x) = 0$, all other basis states in the initial superposition remain unchanged.</p>
+</blockquote>
+<p>Now you will implement the same function you&#39;ve seen in the first two exercises as a marking oracle $U_{7,mark}$.</p>

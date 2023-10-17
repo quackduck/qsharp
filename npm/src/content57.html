@@ -1,0 +1,22 @@
+<p><strong>Inputs:</strong> $3$ qubits in an arbitrary superposition state $|\psi\rangle$, stored in an array of length 3.</p>
+<p><strong>Goal:</strong> Apply the following matrix to the system. This matrix can be represented as applying $3$ single-qubit gates.</p>
+<p>$$
+Q =
+\begin{bmatrix}
+0 &amp; -i &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+i &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+0 &amp; 0 &amp; 0 &amp; -i &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+0 &amp; 0 &amp; i &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 \\ 
+0 &amp; 0 &amp; 0 &amp; 0 &amp; -1 &amp; 0 &amp; 0 &amp; 0 \\ 
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \\ 
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; -1 &amp; 0
+\end{bmatrix}
+$$</p>
+<blockquote>
+<p>We recommend to keep a list of common quantum gates on hand.</p>
+</blockquote>
+<details>
+    <summary><b>Need a hint?</b></summary>
+    <p>Start by noticing that the top right and bottom left quadrants of the matrix are filled with $0$s, and the bottom right quadrant equals to the top left one, multiplied by $i$. Does this look like a tensor product of a 1-qubit and 2-qubit matrices? Which ones?</p>
+</details>

@@ -1,0 +1,8 @@
+<p>First, we measure both qubits in the input array and store the result in <code>m1</code> and <code>m2</code>. We can decode these results like this:  </p>
+<ul>
+<li><code>m1</code> is $|0\rangle$ and <code>m2</code> is $|0\rangle$: we return $0\cdot2+0 = 0$</li>
+<li><code>m1</code> is $|0\rangle$ and <code>m2</code> is $|1\rangle$: we return $0\cdot2+1 = 1$</li>
+<li><code>m1</code> is $|1\rangle$ and <code>m2</code> is $|0\rangle$: we return $1\cdot2+0 = 2$</li>
+<li><code>m1</code> is $|1\rangle$ and <code>m2</code> is $|1\rangle$: we return $1\cdot2+1 = 3$</li>
+</ul>
+<p>In other words, we treat the measurement results as the binary notation of the return value in big endian notation.</p>

@@ -1,0 +1,34 @@
+<p>Entanglement has an effect on the measurement statistics of the system. If two qubits are entangled, then their measurement outcomes will be correlated, while separable states (which are by definition not entangled) have uncorrelated measurement outcomes.</p>
+<blockquote>
+<p>It is useful to revisit the concepts of entanglement and separable states, which were introduced in the kata on multi-qubit systems. Consider a system of $n&gt;1$ number of qubits, which we divide into two parts: A, consisting of $m$ qubits, and B, consisting of the remaining $n-m$ qubits. We say that the state $\ket \psi$ of the entire system is separable if it can be expressed as a tensor product of the states of parts A and B:
+$$
+\ket \psi = \ket {\phi_A} \otimes \ket{\phi_B}
+$$
+where $\ket{\phi_A}$ and $\ket{\phi_B}$ are wave functions that describe parts $A$ and $B$, respectively. If it is not possible to express $\ket \psi$ in such a form, then we say that system A is entangled with system B.</p>
+</blockquote>
+<p>Consider a measurement on the subsystem $A$ of a separable state. Let the measurement be done in a basis ${ \ket{b_0},\dotsc,\ket{b_{2^m-1}}}$. According to the projection formalism, a projection operator $P_i = \ket{b_i}\bra{b_i} \otimes \mathbb{1}$ is chosen randomly. The corresponding post-measurement state of the system is then given by</p>
+<p>$$\ket{\psi}_{i} \equiv \frac{P_i \ket{\psi}}{\big|P_i \ket{\psi}\big|}$$</p>
+<p>$$= \frac{\ket{b_i}\bra{b_i}\phi_A\rangle \otimes \ket {\phi_B}}{\big|\ket{b_i}\bra{b_i}\phi_A\rangle \otimes \ket {\phi_B}\big|}$$</p>
+<p>$$= \frac{\bra{b_i}\phi_A\rangle \cdot \ket{b_i} \otimes \ket {\phi_B}}{\big|\ket{b_i}\big| \cdot \bra{b_i}\phi_A\rangle \cdot \big| \ket {\phi_B}\big|}$$</p>
+<p>$$= \ket{b_i} \otimes \ket{\phi_B}$$</p>
+<p>Thus, the state of subsystem $B$ after the measurement is $\ket{\phi_B}$ independently of the outcome $i$ of the measurement on the first qubit. The results of a subsequent measurement on subsystem $B$, including outcome probabilities, will be independent of the result of the first measurement. In other words, the outcomes of the two measurements will be uncorrelated.</p>
+<p>On the other hand, if the system is entangled, then the measurement outcomes will be correlated, in a manner dictated by the bases chosen for the measurements on the two subsystems. The following exercise illustrates this phenomenon.</p>
+<h2>🔎 Analyze</h2>
+<p><strong>Sequential measurements on an entangled state and a separable state</strong></p>
+<p>Consider two two-qubit states:</p>
+<ul>
+<li>The Bell state $|\Phi^{+}\rangle = \frac{1}{\sqrt{2}} \big (|00\rangle + |11\rangle\big)$.</li>
+<li>A state $\ket \Theta = \frac{1}{2} \big( \ket{00} + \ket{01} + \ket{10} + \ket{11} \big)$.</li>
+</ul>
+<p>For both states, consider a measurement on the first qubit, followed by a measurement on the second qubit, both done in the computational basis. For which state can we expect the measurement outcomes to be correlated? Verify by calculating the sequential measurement probabilities explicitly for both states. </p>
+<details>
+<summary><b>Solution</b></summary>
+<p><b>The Bell state</b>: If the measurement outcome on the first qubit is $0$, a subsequent measurement on the second qubit *always* results in an outcome of $0$, with probability $1$. Similarly, if the measurement outcome on the first qubit is $1$, then the second qubit measurement always results in $1$. Thus, sequential measurements are perfectly *correlated*.</p>
+
+<p><b>Separable state $\ket \theta$</b>: Irrespective of whether the first qubit measurement outcome is $0$ of $1$ (each of which occurs with a probability of $0.5$), a subsequent measurement on the second qubit results in an outcome of $0$ or $1$ (both with a probability of $0.5$). Thus, sequential measurements are perfectly <b>uncorrelated</b>.</p>
+
+<p>This aligns with the fact that the Bell state is entangled, while the $\ket{\theta}$ is separable and can be expressed as $\ket \theta = \ket + \otimes \ket +$.</p>
+</details>
+
+<h2>State Modification Using Partial Measurements</h2>
+<p>For certain multi-qubit systems prepared in a superposition state, it is possible to use partial measurements to collapse a part of the system to some desired state.</p>

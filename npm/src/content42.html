@@ -1,0 +1,10 @@
+<p>Sometimes, quantum states cannot be written as individual qubit states. Quantum systems that are not separable are called entangled systems. If a state can be written as the product state of the individual subsystems, that state is not entangled.</p>
+<p>Entanglement is a quantum correlation, which is very different from classical correlations. In entanglement, the state of the subsystems isn&#39;t determined, and you can talk only about the probabilities associated with the outcomes. The global system must be considered as one.</p>
+<blockquote>
+<p>For example, every state in the Bell basis is an entangled state.</p>
+</blockquote>
+<p>Entanglement is a huge part of what makes quantum computing so powerful. It allows us to link the qubits so that they stop behaving like individuals and start behaving like a large, more complex system. In entangled systems, measuring one of the qubits modifies the state of the other qubits, and tells us something about their state.</p>
+<p>For example, consider two qubits $A$ and $B$ in superpositions such that the state of the global system is</p>
+<p>$$|\psi\rangle_{AB} = \frac{1}{\sqrt2}|00\rangle + \frac{1}{\sqrt2}|11\rangle$$</p>
+<p>In such a state, only two outcomes are possible when you measure the state of both qubits in the standard basis: $|00\rangle$ and $|11\rangle$. Notice that each outcome has the same probability of $\frac{1}{2}$. There&#39;s zero probability of obtaining $|01\rangle$ and $|10\rangle$. If you measure the first qubit and you get that it is in $|0\rangle$ state, then you can be positive that the second qubit is also in $|0\rangle$ state, even without measuring it. The measurement outcomes are correlated, and the qubits are <em>entangled</em>.</p>
+<p>This property is used extensively in many quantum algorithms.</p>

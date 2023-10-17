@@ -1,0 +1,10 @@
+<p>We&#39;ve seen this state before in the[Multi-Qubit Systems kata, where we established that this state is not separable, i.e., it can not be prepared using just the single-qubit gates. To prepare it, we need to use <code>CNOT</code> gate.</p>
+<p>Let&#39;s look at the effect of the <code>CNOT</code> gate on a separable state described in the tutorial:
+$$CNOT_{1,2}\big(\alpha|0\rangle + \beta|1\rangle\big) \otimes |0\rangle = CNOT_{1,2}(\alpha|00\rangle + \beta|10\rangle) = \alpha|00\rangle + \beta|11\rangle$$</p>
+<p>This resulting state is exactly the state we need to prepare, with $\alpha = \beta = \frac{1}{\sqrt{2}}$!</p>
+<p>The solution takes two steps:</p>
+<ol>
+<li>Prepare a state $\big(\frac{1}{\sqrt{2}}|0\rangle + \frac{1}{\sqrt{2}}|1\rangle\big) \otimes |0\rangle$.
+We can use the Hadamard gate to do this.</li>
+<li>Apply a CNOT take with the first qubit as the control and the second qubit as the target.</li>
+</ol>

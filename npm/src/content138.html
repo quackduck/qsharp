@@ -1,0 +1,14 @@
+<p>We introduced the function <a href="https://learn.microsoft.com/en-us/qsharp/api/qsharp/microsoft.quantum.canon.applycontrolledonbitstring" target="_blank"><code>ApplyControlledOnBitString</code></a> provided by the Q# Standard library.
+It defines a variant of a gate controlled on a state specified by a bit mask; for example, bit mask <code>[true, false]</code> means that the gate should be applied only if the two control qubits are in the $|10\rangle$ state.</p>
+<p>The sequence of steps that implement this variant are:</p>
+<ol>
+<li>Apply the $X$ gate to each control qubit that corresponds to a <code>false</code> element of the bit mask. After this, if the control qubits started in the $|10\rangle$ state, they&#39;ll end up in the $|11\rangle$ state, and if they started in any other state, they&#39;ll end up in any state but $|11\rangle$.</li>
+<li>Apply the regular controlled version of the gate.</li>
+<li>Apply the $X$ gate to the same qubits to return them to their original state.</li>
+</ol>
+<p>Due to this <a href="https://learn.microsoft.com/en-us/azure/quantum/user-guide/language/statements/conjugations" target="_blank">conjugation pattern</a>, the time complexity of this function is $2N$, where N is the number of control qubits.</p>
+<blockquote>
+<p>Notice that the input state in the demo above is an equal superposition of all basis states. 
+After applying the oracle the absolute values of all amplitudes are the same, but the states $|010\rangle$ and $|101\rangle$ had their phase flipped to negative!<br>Recall that these two states are exactly the inputs for which $f(x) = 1$, thus they are exactly the two states we expect to experience a phase flip!</p>
+</blockquote>
+<p>In the next exercise you will implement the classical oracle that you&#39;ve implemented in the first exercise, this time as a quantum phase oracle $U_{7,\text{phase}}$ that encodes the number 7.</p>

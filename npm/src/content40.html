@@ -1,0 +1,50 @@
+<p>In a previous kata we discussed the concept of a qubit - the basic building block of a quantum computer.
+A multi-qubit system is a collection of multiple qubits, treated as a single system.</p>
+<p>Let&#39;s start by examining a system of two classical bits. Each bit can be in two states: $0$ and $1$. Therefore, a system of two bits can be in four different states: $00$, $01$, $10$, and $11$. Generally, a system of $N$ classical bits can be in any of the $2^N$ states.</p>
+<p>A system of $N$ qubits can also be in any of the $2^N$ classical states, but, unlike the classical bits, it can also be in a <strong>superposition</strong> of all these states.</p>
+<p>Similarly to single-qubit systems, a state of an $N$-qubit system can be represented as a complex vector of size $2^N$:
+$$\begin{bmatrix} x_0 \\ x_1 \\ \vdots \\ x_{2^N-1}\end{bmatrix}$$</p>
+<h2>Basis States</h2>
+<p>Similarly to single-qubit systems, multi-qubit systems have their own sets of basis states.
+The computational basis for an $N$-qubit system is a set of $2^N$ vectors, in each of which with one element equals $1$, and the other elements equal $0$.</p>
+<p>For example, this is the <strong>computational basis</strong> for a two-qubit system:</p>
+<table>
+    <tr>
+        <td>$$\begin{bmatrix} 1 \\\ 0 \\\ 0 \\\ 0 \end{bmatrix}$$</td>
+        <td>$$\begin{bmatrix} 0 \\\ 1 \\\ 0 \\\ 0 \end{bmatrix}$$</td>
+        <td>$$\begin{bmatrix} 0 \\\ 0 \\\ 1 \\\ 0 \end{bmatrix}$$</td>
+        <td>$$\begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ 1 \end{bmatrix}$$</td>
+    </tr>
+</table>
+
+<p>It is easy to see that these vectors form an orthonormal basis. Note that each of these basis states can be represented as a tensor product of some combination of single-qubit basis states:</p>
+<table>
+    <tr>
+        <td>$\begin{bmatrix} 1 \\\ 0 \\\ 0 \\\ 0 \end{bmatrix} =
+\begin{bmatrix} 1 \\\ 0 \end{bmatrix} \otimes \begin{bmatrix} 1 \\\ 0 \end{bmatrix}$</td>
+        <td>$\begin{bmatrix} 0 \\\ 1 \\\ 0 \\\ 0 \end{bmatrix} =
+\begin{bmatrix} 1 \\\ 0 \end{bmatrix} \otimes \begin{bmatrix} 0 \\\ 1 \end{bmatrix}$</td>
+        <td>$\begin{bmatrix} 0 \\\ 0 \\\ 1 \\\ 0 \end{bmatrix} =
+\begin{bmatrix} 0 \\\ 1 \end{bmatrix} \otimes \begin{bmatrix} 1 \\\ 0 \end{bmatrix}$</td>
+        <td>$\begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ 1 \end{bmatrix} =
+\begin{bmatrix} 0 \\\ 1 \end{bmatrix} \otimes \begin{bmatrix} 0 \\\ 1 \end{bmatrix}$</td>
+    </tr>
+</table>
+
+<p>Any two-qubit system can be expressed as some linear combination of those tensor products of single-qubit basis states.</p>
+<p>Similar logic applies to systems of more than two qubits. In general case,</p>
+<p>$$
+\begin{bmatrix} x_0 \\ x_1 \\ \vdots \\ x_{2^N-1} \end{bmatrix} =
+x_0 \begin{bmatrix} 1 \\ 0 \\ \vdots \\ 0 \end{bmatrix} +
+x_1 \begin{bmatrix} 0 \\ 1 \\ \vdots \\ 0 \end{bmatrix} + \dotsb +
+x_{2^N-1} \begin{bmatrix} 0 \\ 0 \\ \vdots \\ 1 \end{bmatrix}
+$$</p>
+<p>The coefficients of the basis vectors define how &quot;close&quot; is the system state to the corresponding basis vector.</p>
+<blockquote>
+<p>Just like with single-qubit systems, there exist other orthonormal bases states for multi-qubit systems. An example for a two-qubit system is the <strong>Bell basis</strong>:</p>
+<p>$$\frac{1}{\sqrt{2}}\begin{bmatrix} 1 \\ 0 \\ 0 \\ 1 \end{bmatrix}$$
+$$\frac{1}{\sqrt{2}}\begin{bmatrix} 1 \\ 0 \\ 0 \\ -1 \end{bmatrix}$$
+$$\frac{1}{\sqrt{2}}\begin{bmatrix} 0 \\ 1 \\ 1 \\ 0 \end{bmatrix}$$
+$$\frac{1}{\sqrt{2}}\begin{bmatrix} 0 \\ 1 \\ -1 \\ 0 \end{bmatrix}$$</p>
+<p>You can check that these vectors are normalized, and orthogonal to each other, and that any two-qubit state can be expressed as a linear combination of these vectors.  The vectors of Bell basis, however, can not be represented as tensor products of single-qubit basis states.</p>
+</blockquote>

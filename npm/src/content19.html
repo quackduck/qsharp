@@ -1,0 +1,15 @@
+<p>This section describes a more formal process of finding the ket-bra decompositions of quantum gates. This section is not necessary to start working with quantum gates, so feel free to skip it for now, and come back to it later.</p>
+<p>You can use the properties of <em>eigenvalues</em> and <em>eigenvectors</em> to find the ket-bra decomposition of any gate. Given a gate $A$ and the orthogonal vectors $|\phi\rangle$ and $|\psi\rangle$, if:</p>
+<p>$$A|\phi\rangle = x_\phi|\phi\rangle$$
+$$A|\psi\rangle = x_\psi|\psi\rangle$$</p>
+<p>Real numbers $x_\phi$ and $x_\psi$ are called eigenvalues and $|\phi\rangle$ and $|\psi\rangle$ are eigenvectors of $A$. Then:</p>
+<p>$$A = x_\phi|\phi\rangle\langle\phi| + x_\psi|\psi\rangle\langle\psi|$$</p>
+<p>Let&#39;s use our $X$ gate as a simple example. The $X$ gate has two eigenvectors: $|+\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle + |1\rangle\big)$ and $|-\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle - |1\rangle\big)$. Their eigenvalues are $1$ and $-1$ respectively:</p>
+<p>$$X|+\rangle = |+\rangle$$
+$$X|-\rangle = -|-\rangle$$</p>
+<p>Here&#39;s what the decomposition looks like:
+$$X = |+\rangle\langle+| - |-\rangle\langle-| =$$
+$$\frac{1}{2}\big[\big(|0\rangle + |1\rangle\big)\big(\langle0| + \langle1|\big) - \big(|0\rangle - |1\rangle\big)\big(\langle0| - \langle1|\big)\big] =$$
+$$\frac{1}{2}\big(|0\rangle\langle0| + |0\rangle\langle1| + |1\rangle\langle0| + |1\rangle\langle1| - |0\rangle\langle0| + |0\rangle\langle1| + |1\rangle\langle0| - |1\rangle\langle1|\big) =$$
+$$\frac{1}{2}\big(2|0\rangle\langle1| + 2|1\rangle\langle0|\big) =$$
+$$|0\rangle\langle1| + |1\rangle\langle0|$$</p>

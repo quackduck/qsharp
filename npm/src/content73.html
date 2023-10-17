@@ -1,0 +1,14 @@
+<p><strong>Input:</strong></p>
+<ol>
+<li><code>controls</code> - a register of $N$ qubits in an arbitrary state $|\phi\rangle$.</li>
+<li><code>target</code> - a qubit in an arbitrary state $|\psi\rangle$.</li>
+<li><code>controlBits</code> - an array of $N$ booleans, specifying what state each control qubit should be in order to apply the gate.</li>
+</ol>
+<p><strong>Goal:</strong> Apply the controlled <code>X</code> gate with the <code>controls</code> as control qubits and <code>target</code> as target, with the state specified by <code>controlBits</code> as controls. If the element of the array is <code>true</code>, the corresponding qubit is a regular control (should be in state $|1\rangle$), and if it is <code>false</code>, the corresponding qubit is an anti-control (should be in state $|0\rangle$).</p>
+<blockquote>
+<p>For example, if <code>controlBits = [true, false, true]</code>, the controlled <code>X</code> gate should only be applied if the control qubits are in state $|101\rangle$.</p>
+</blockquote>
+<details>
+    <summary><strong>Need a hint?</strong></summary>
+    <p>Consider using a library operation for this task. If you want to do it without a library operations, don't forget to reset the qubits back to the state they were originally in.</p>
+</details>

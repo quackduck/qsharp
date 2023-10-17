@@ -1,0 +1,33 @@
+<p>Our first proper multi-qubit gate is the <code>CNOT</code> (&quot;controlled NOT&quot;) gate. The <code>CNOT</code> gate is a two-qubit gate, one is referred to as the <strong>control</strong> qubit, and the other one is the <strong>target</strong> qubit (usually the first qubit is the control, and the second qubit is the target).</p>
+<p><code>CNOT</code> acts as a conditional gate of sorts: if the control qubit is in state $|1\rangle$, it applies the <code>X</code> gate to the target qubit, otherwise it does nothing.</p>
+<blockquote>
+<p>If the system is in a superposition of several basis states, the effects of the gate will be a linear combination of the effects of it acting separately on each of the basis states.
+This will be the case for all quantum gates you&#39;ll encounter later that are specified in terms of basis states: since all unitary gates are linear, it is sufficient to define their effect on the basis states, and use linearity to figure out their effect on any state.</p>
+</blockquote>
+<table>
+    <tr>
+        <th>Gate</th>
+        <th>Matrix</th>
+        <th>Applying to $|\psi\rangle = \alpha|00\rangle + \beta|01\rangle + \gamma|10\rangle + \delta|11\rangle$</th>
+        <th>Applying to basis states</th>
+        <th>Q# Documentation</th>
+    </tr>
+    <tr>
+        <td>$\text{CNOT}$</td>
+        <td>$\begin{bmatrix} 1 & 0 & 0 & 0 \\\ 0 & 1 & 0 & 0 \\\ 0 & 0 & 0 & 1 \\\ 0 & 0 & 1 & 0 \end{bmatrix}$</td>
+        <td>$\text{CNOT}|\psi\rangle = \alpha|00\rangle + \beta|01\rangle + \delta|10\rangle + \gamma|11\rangle$</td>
+        <td>
+            $$\text{CNOT}|00\rangle = |00\rangle$$
+            $$\text{CNOT}|01\rangle = |01\rangle$$
+            $$\text{CNOT}|10\rangle = |11\rangle$$
+            $$\text{CNOT}|11\rangle = |10\rangle$$
+        </td>
+        <td><a href="https://docs.microsoft.com/qsharp/api/qsharp/microsoft.quantum.intrinsic.cnot" target="_blank">CNOT</a></td>
+    </tr>
+</table>
+
+<p>The <code>CNOT</code> gate is particularly useful for preparing entangled states. Consider the following separable state:</p>
+<p>$$\big(\alpha|0\rangle + \beta|1\rangle\big) \otimes |0\rangle = \alpha|00\rangle + \beta|10\rangle$$</p>
+<p>If we apply the $\text{CNOT}$ gate to it, with the first qubit as the control, and the second as the target, we get the following state, which is not separable any longer:</p>
+<p>$$\alpha|00\rangle + \beta|11\rangle$$</p>
+<p>The <code>CNOT</code> gate is self-adjoint: applying it for the second time reverses its effect.</p>

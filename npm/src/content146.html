@@ -1,0 +1,12 @@
+<p><strong>Inputs:</strong></p>
+<ol>
+<li>A marking oracle implementing an unknown $N$-bit function $f(x)$.</li>
+<li>$N$ qubits in an arbitrary state (input/query register).</li>
+</ol>
+<p><strong>Goal:</strong></p>
+<p>Flip the phase of each basis state $|x\rangle$ for which $f(x) = 1$. You can only access $f(x)$ via the marking oracle you are given.</p>
+<br/>
+<details>
+  <summary><b>Need a hint?</b></summary>
+    Recall that you can allocate extra qubits to assist in this operation.  Is there a state that you could prepare with an auxiliary qubit which would help you to convert the marking oracle to a phase oracle?
+</details>

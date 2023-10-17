@@ -1,0 +1,5 @@
+<p>We are asked to perform a <code>X</code> gate on the <code>target</code> qubit controlled by the state of <code>controls</code> qubits; this state should correspond to the mask given by <code>controlBits</code>.</p>
+<p>If the <code>controlBits</code> mask consists of all <code>true</code> values, we can use a familiar <code>Controlled X</code> gate. What can we do if the mask has some <code>false</code> values in it?</p>
+<p>Turns out we can transform the state of the control qubits depending on the corresponding elements of <code>controlBits</code>: if the element is <code>false</code>, we apply an <code>X</code> gate to the corresponding qubit in the <code>controls</code> array. After this, <code>Controlled X</code> gate will apply an <code>X</code> gate in the exact case that we want.
+Finally, we&#39;ll need to remember to undo (&quot;uncompute&quot;) the first step, otherwise our controlled gate will affect the state of the control qubits as well as the state of the target.</p>
+<p>As you can see in the first cell below, this can take quite some coding.</p>

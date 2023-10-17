@@ -1,0 +1,24 @@
+<p><strong>Inputs:</strong></p>
+<ol>
+<li>$N$ qubits in an arbitrary state $|x\rangle$ (input/query register).</li>
+<li>A boolean array of length $N$ <code>pattern</code> representing a basis state; <code>true</code> and <code>false</code> elements correspond to $|1\rangle$ and $|0\rangle$, respectively.</li>
+</ol>
+<p><strong>Goal:</strong></p>
+<p>Flip the sign of the input state $|x\rangle$ if the input register matches the basis state
+represented by <code>pattern</code>.<br><strong>Implement this oracle without using auxiliary qubits</strong></p>
+<p><strong>Examples:</strong></p>
+<ul>
+<li>If the query register is in the state $|010\rangle$ and <code>pattern = [false, true, false]</code>, flip the sign of the input register.</li>
+<li>If the query register is in the state $|1001\rangle$ and <code>pattern = [false, true, true, false]</code>, do nothing.</li>
+</ul>
+<br/>
+<details>
+  <summary><b>Before implementing this oracle, answer the question: are you implementing a marking or a phase oracle?</b></summary>
+    This is a phase oracle, because we are changing the phase of the input state $|x\rangle$ based on the value of the function $f(x)$.
+</details>
+
+<br/>
+<details>
+  <summary><b>Need a hint?</b></summary>
+  Can you transform the state of the input register based on the <code>pattern</code> value so as to have to flip the phase only for the $|1...1\rangle$ state?
+</details>

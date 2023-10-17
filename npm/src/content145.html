@@ -1,0 +1,61 @@
+<p>Previously we considered applying marking oracles when the register $|x\rangle$ was in a basis state or a superposition state, and the target qubit $|y\rangle$ in a basis state.  How might the effect of applying marking oracles change if the target is also in a superposition state?  In this case we will observe <strong>phase kickback</strong> - the relative phase from the target qubit affecting (&quot;kicked back&quot; into) the state of the input qubits.</p>
+<p>In order to observe phase kickback, we use the target qubit $|y\rangle=|-\rangle$.</p>
+<blockquote>
+<p>This is the standard choice for two reasons. 
+First, for phase kickback to occur, the target qubit must have a difference in relative phase between the basis states $|0\rangle$ and $|1\rangle$. 
+Second, the target qubit must be in an equal superposition, otherwise it will become entangled with the input register.</p>
+</blockquote>
+<p>Let&#39;s see the results of applying a marking oracle $U_{mark}$ which implements the function $f(x)$ to the input register $|x\rangle$ and the target qubit in state $|-\rangle$:</p>
+<ul>
+<li>If the input register $|x\rangle$ is in a basis state:</li>
+</ul>
+<p>$$U_{mark} |x\rangle |-\rangle = \frac1{\sqrt2} \big(U_{mark}|x\rangle|0\rangle - U_{mark}|x\rangle |1\rangle\big)$$</p>
+<p>$$= \frac1{\sqrt2} \big(|x\rangle|0\oplus f(x)\rangle - |x\rangle |1\oplus f(x)\rangle\big)$$</p>
+<p>$$= 
+\begin{cases} 
+\frac1{\sqrt2} \big(|x\rangle|0\rangle - |x\rangle |1\rangle\big) = |x\rangle|-\rangle \text{ if } f(x) = 0 \\ 
+\frac1{\sqrt2} \big(|x\rangle|1\rangle - |x\rangle |0\rangle\big) = -|x\rangle|-\rangle \text{ if } f(x) = 1
+\end{cases}
+$$</p>
+<p>$$= (-1)^{f(x)}|x\rangle |-\rangle$$</p>
+<ul>
+<li>If the input register is in a superposition state, say $|x\rangle = \frac1{\sqrt2} \big(|b_1\rangle + |b_2\rangle\big)$, where $|b_1\rangle$ and $|b_2\rangle$ are basis states:</li>
+</ul>
+<p>$$U_{mark} |x\rangle |-\rangle = U_{mark} \frac{1}{\sqrt{2}} \big(|b_1\rangle + |b_2\rangle\big) |-\rangle$$</p>
+<p>$$= \frac{1}{\sqrt{2}} \big( U_{mark}|b_1\rangle|-\rangle + U_{mark}|b_2\rangle|-\rangle\big)$$</p>
+<p>$$= \frac{1}{\sqrt{2}} \big( (-1)^{f(b_1)}|b_1\rangle + (-1)^{f(b_2)}|b_2\rangle\big) |-\rangle$$</p>
+<p>We see that in both cases applying $U_{mark}$ does not change the state of the target qubit, but it does change the state of the input register. 
+Thus we can drop the target qubit without any repercussions after the application of the oracle. 
+Notice that the input register is now in the following state:
+$$|\psi\rangle = \frac{1}{\sqrt{2}} \big( (-1)^{f(b_1)}|b_1\rangle + (-1)^{f(b_2)}|b_2\rangle\big),$$</p>
+<p>which looks exactly as if we applied a phase oracle to $|x\rangle$ instead of applying a marking oracle to $|x\rangle|-\rangle$!  This is a very important application of phase kickback: it allows to convert a marking oracle into a phase oracle - which you will implement in the next task.</p>
+<blockquote>
+<p>Another important application of this effect is <strong>phase estimation</strong> algorithm, which allows to estimate an eigenvalue of an eigenvector.</p>
+</blockquote>
+<p>Consider the following example using the $U_{7,mark}$ oracle. Let&#39;s begin with $|x\rangle$ as an equal superposition of the $6$ and $7$ basis states and $|y\rangle=|-\rangle$, the overall state is:</p>
+<p>$$|\eta\rangle = \Big[\frac{1}{\sqrt{2}}\big(|110\rangle + |111\rangle\big)\Big] \otimes \frac{1}{\sqrt{2}}\big(|0\rangle - |1\rangle\big)$$</p>
+<p>$$= \frac{1}{2} \big(|110\rangle|0\rangle + |111\rangle|0\rangle - |110\rangle|1\rangle - |111\rangle|1\rangle\big)$$</p>
+<p>How does $U_{7,mark}$ act on this state?</p>
+<p>$$U_{7,mark}|\eta\rangle = U_{7,mark} \frac{1}{2} \big(|110\rangle|0\rangle + |111\rangle|0\rangle - |110\rangle|1\rangle - |111\rangle|1\rangle \big)$$</p>
+<p>$$= \frac{1}{2} \big( U_{7,mark}|110\rangle|0\rangle + U_{7,mark}|111\rangle|0\rangle - U_{7,mark}|110\rangle|1\rangle - U_{7,mark}|111\rangle|1\rangle \big)$$</p>
+<p>$$= \frac{1}{2} \big(|110\rangle|0\rangle + |111\rangle|1\rangle - |110\rangle|1\rangle - |111\rangle|0\rangle \big) := |\xi\rangle$$</p>
+<p>Now we would like to observe how our input state $|\eta\rangle$ was modified by the oracle.  Let&#39;s simplify the resulting state $|\xi\rangle$:</p>
+<p>$$|\xi\rangle = \frac{1}{2} \big(|110\rangle|0\rangle + |111\rangle|1\rangle - |110\rangle|1\rangle - |111\rangle|0\rangle\big)$$</p>
+<p>$$= \frac{1}{2} \big(|110\rangle|0\rangle - |110\rangle|1\rangle - |111\rangle|0\rangle + |111\rangle|1\rangle \big)$$</p>
+<p>$$= \frac{1}{2} \Big[|110\rangle \otimes \big(|0\rangle - |1\rangle \big) + |111\rangle \otimes \big(|1\rangle - |0\rangle\big)\Big]$$</p>
+<p>$$= \Big[\frac{1}{\sqrt{2}} \big( |110\rangle - |111\rangle \big) \Big] \otimes \Big[ \frac{1}{\sqrt{2}} \big( |0\rangle - |1\rangle \big) \Big]$$</p>
+<p>$$= \Big[\frac{1}{\sqrt{2}} \big( |110\rangle - |111\rangle \big) \Big] \otimes |-\rangle$$</p>
+<p>Finally, let&#39;s compare $|\eta\rangle$ and $|\xi\rangle$; below are the final equations repeated for your convenience:
+$$|\eta\rangle = \Big[\frac{1}{\sqrt{2}}\big(|110\rangle + |111\rangle\big)\Big] \otimes |-\rangle$$
+$$|\xi\rangle = \Big[\frac{1}{\sqrt{2}}\big(|110\rangle - |111\rangle\big)\Big] \otimes |-\rangle$$</p>
+<p>We can see that these two equations are identical, except for the $-1$ phase that appeared on the $|111\rangle$ basis state (representing $7$).  This is a specific example of the phase kickback effect, as the phase from $|-\rangle$ has been <em>kicked back</em> into $|x\rangle$.</p>
+<h2>🔎 Analyze</h2>
+<p><strong>Distinguishing states</strong></p>
+<p>How could we distinguish the states $|\eta\rangle = |11+\rangle |-\rangle$ and $|\xi\rangle = |11-\rangle |-\rangle$?  Take a moment to think.</p>
+<details>
+<summary><b>Solution</b></summary>
+Recall that we can only observe alterations to out input state by performing a measurement.
+If we apply Hadamard gate to the third qubit, we will be able to distinguish between the input state and the output state. 
+    $$(I\otimes I \otimes H)|11+\rangle = |110\rangle \\ (I\otimes I \otimes H)|11-\rangle = |111\rangle$$ 
+Now if we were to measure the third qubit, we'll be able to distinguish the starting state and the state after phase kickback occurred.
+</details>

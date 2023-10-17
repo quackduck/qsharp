@@ -1,0 +1,84 @@
+<p>This section introduces some of the common single-qubit gates, including their matrix form, their ket-bra decomposition, and a brief &quot;cheatsheet&quot; listing their effect on some common qubit states.</p>
+<p>You can use a tool called <a href="https://algassert.com/quirk" target="_blank">Quirk</a> to visualize how these gates interact with various qubit states.</p>
+<p>This section relies on the following notation:</p>
+<table>
+  <tr>
+    <td>$|+\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle + |1\rangle\big)$</td>
+    <td>$|-\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle - |1\rangle\big)$</td>
+  </tr>
+  <tr>
+    <td>$|i\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle + i|1\rangle\big)$</td>
+    <td>$|-i\rangle = \frac{1}{\sqrt{2}}\big(|0\rangle - i|1\rangle\big)$</td>
+  </tr>
+</table>
+
+<p>The Pauli gates, named after <a href="https://en.wikipedia.org/wiki/Wolfgang_Pauli" target="_blank">Wolfgang Pauli</a>, are based on the so-called <strong>Pauli matrices</strong>, $X$, $Y$ and $Z$. All three Pauli gates are <strong>self-adjoint</strong>, meaning that each one is its own inverse, $XX = \mathbb{I}$.</p>
+<table>
+  <tr>
+    <th>Gate</th>
+    <th>Matrix</th>
+    <th>Ket-Bra</th>
+    <th>Applying to $|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$</th>
+    <th>Applying to basis states</th>
+    <th>Q# Documentation</th>
+  </tr>
+  <tr>
+    <td>$X$</td>
+    <td>$\begin{bmatrix} 0 & 1 \\\ 1 & 0 \end{bmatrix}$</td>
+    <td>$|0\rangle\langle1| + |1\rangle\langle0|$</td>
+    <td>$X|\psi\rangle = \alpha|1\rangle + \beta|0\rangle$</td>
+    <td>
+      $X|0\rangle = |1\rangle$<br>
+      $X|1\rangle = |0\rangle$<br>
+      $X|+\rangle = |+\rangle$<br>
+      $X|-\rangle = -|-\rangle$<br>
+      $X|i\rangle = i|-i\rangle$<br>
+      $X|-i\rangle = -i|i\rangle$
+    </td>
+    <td><a href="https://learn.microsoft.com/en-us/qsharp/api/qsharp/microsoft.quantum.intrinsic.x" target="_blank">X</a></td>
+  </tr>
+  <tr>
+    <td>$Y$</td>
+    <td>$\begin{bmatrix} 0 & -i \\\ i & 0 \end{bmatrix}$</td>
+    <td>$i(|1\rangle\langle0| - |0\rangle\langle1|)$</td>
+    <td>$Y|\psi\rangle = i\big(\alpha|1\rangle - \beta|0\rangle\big)$</td>
+    <td>
+      $Y|0\rangle = i|1\rangle$<br>
+      $Y|1\rangle = -i|0\rangle$<br>
+      $Y|+\rangle = -i|-\rangle$<br>
+      $Y|-\rangle = i|+\rangle$<br>
+      $Y|i\rangle = |i\rangle$<br>
+      $Y|-i\rangle = -|-i\rangle$<br>
+    </td>
+    <td><a href="https://learn.microsoft.com/en-us/qsharp/api/qsharp/microsoft.quantum.intrinsic.y" target="_blank">Y</a></td>
+  </tr>
+  <tr>
+    <td>$Z$</td>
+    <td>$\begin{bmatrix} 1 & 0 \\\ 0 & -1 \end{bmatrix}$</td>
+    <td>$|0\rangle\langle0| - |1\rangle\langle1|$</td>
+    <td>$Z|\psi\rangle = \alpha|0\rangle - \beta|1\rangle$</td>
+    <td>
+      $Z|0\rangle = |0\rangle$<br>
+      $Z|1\rangle = -|1\rangle$<br>
+      $Z|+\rangle = |-\rangle$<br>
+      $Z|-\rangle = |+\rangle$<br>
+      $Z|i\rangle = |-i\rangle$<br>
+      $Z|-i\rangle = |i\rangle$<br>
+    </td>
+    <td><a href="https://learn.microsoft.com/en-us/qsharp/api/qsharp/microsoft.quantum.intrinsic.z" target="_blank">Z</a></td>
+  </tr>
+</table>
+
+<blockquote>
+<p>The $X$ gate is sometimes referred to as the <strong>bit flip</strong> gate, or the <strong>NOT</strong> gate, because it acts like the classical NOT gate on the computational basis.</p>
+<p>The $Z$ gate is sometimes referred to as the <strong>phase flip</strong> gate.</p>
+</blockquote>
+<p>Here are several properties of the Pauli gates that are easy to verify and convenient to remember:</p>
+<ul>
+<li>Different Pauli gates <em>anti-commute</em>:
+$$XZ = -ZX, XY = -YX, YZ = -ZY$$</li>
+<li>A product of any two Pauli gates equals the third gate, with an extra $i$ (or $-i$) phase:
+$$XY = iZ, YZ = iX, ZX = iY$$ </li>
+<li>A product of all three Pauli gates equals identity (with an extra $i$ phase):
+$$XYZ = iI$$</li>
+</ul>

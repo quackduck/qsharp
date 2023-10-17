@@ -1,0 +1,16 @@
+<p>Controlled gates can have multiple control qubits; in this case the gate $U$ is applied only if all control qubits are in the $|1\rangle$ states.
+You can think of it as constructing a controlled version of a gate that is already controlled.</p>
+<p>The simplest example of this is the <strong>Toffoli gate</strong>, or <code>CCNOT</code> (controlled controlled <code>NOT</code>) gate, which applies the <code>X</code> gate to the last qubit only if the first two qubits are in $|11\rangle$ state:</p>
+<p>$$
+\begin{bmatrix}
+    1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+    0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+    0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+    0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
+    0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \\ 
+    0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 \\ 
+    0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \\ 
+    0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0
+\end{bmatrix}
+$$</p>
+<p>To construct a multi-controlled version of an operation in Q#, you can use the Controlled functor as well, passing all control qubits as an array that is the first parameter.</p>

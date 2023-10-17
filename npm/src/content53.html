@@ -1,0 +1,14 @@
+<p>The start state is the same as the previous exercises:
+$$ \begin{bmatrix} 1 \\ 0 \\ 0 \\ 0 \end{bmatrix} = \begin{bmatrix} 1 \\ 0 \end{bmatrix} \otimes \begin{bmatrix} 1 \\ 0 \end{bmatrix} = |0\rangle \otimes |0\rangle $$</p>
+<p>The goal state, factored as a tensor product, looks like this (remember that $e^{3i\pi/4} = e^{i\pi/4} e^{i\pi/2}$):</p>
+<p>$$
+\frac{1}{2}\begin{bmatrix} 1 \\ e^{i\pi/4} \\ e^{i\pi/2} \\ e^{3i\pi/4} \end{bmatrix} =
+\frac{1}{\sqrt2} \begin{bmatrix} 1 \\ e^{i\pi/2} \end{bmatrix} \otimes \frac{1}{\sqrt2}\begin{bmatrix} 1 \\ e^{i\pi/4} \end{bmatrix} =
+\frac{1}{\sqrt2}\big(|0\rangle + e^{i\pi/2}|1\rangle\big) \otimes \frac{1}{\sqrt2}\big(|0\rangle + e^{i\pi/4}|1\rangle\big) $$</p>
+<p>We will again need to adjust the states of both qubits independently.</p>
+<p>For the first qubit, we&#39;ll start by applying the <strong>H</strong> gate, getting the state $\frac{1}{\sqrt2} \begin{bmatrix} 1 \\ 1 \end{bmatrix}$, as we&#39;ve seen in the previous task. Afterwards we&#39;ll apply the <strong>S</strong> gate with the following result:</p>
+<p>$$ \begin{bmatrix} 1 &amp; 0 \\ 0 &amp; i \end{bmatrix} \cdot \frac{1}{\sqrt2} \begin{bmatrix} 1 \\ 1 \end{bmatrix} = \frac{1}{\sqrt2} \begin{bmatrix} 1 \\ i \end{bmatrix}$$</p>
+<p>If we recall that $i = e^{i\pi/2}$, we can write the final state of the second qubit as:
+$$ \frac{1}{\sqrt2} \begin{bmatrix} 1 \\ e^{i\pi/2} \end{bmatrix} $$</p>
+<p>For the second qubit. we&#39;ll apply the <strong>H</strong> gate, followed by the <strong>T</strong> gate, with the following result:
+$$ \begin{bmatrix} 1 &amp; 0 \\ 0 &amp; e^{i\pi/4} \end{bmatrix} \cdot \frac{1}{\sqrt2} \begin{bmatrix} 1 \\ 1 \end{bmatrix} = \frac{1}{\sqrt2} \begin{bmatrix} 1 \\ e^{i\pi/4} \end{bmatrix} $$</p>

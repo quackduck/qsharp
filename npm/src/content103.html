@@ -1,0 +1,6 @@
+<p>We can generalize this code to read out an integer in big endian notation from a qubit array of arbitrary length using several library operations and functions:</p>
+<ul>
+<li><code>MeasureEachZ</code> measures each of the qubits in the array in the computational basis and returns an array of <code>Result</code> data type.</li>
+<li><code>Reversed</code> reverses the given array.</li>
+<li><code>ResultArrayAsInt</code> converts an array of bits given as <code>Result</code> to an integer, assuming little-endian notation (that&#39;s why we have to reverse the array before converting it).</li>
+</ul>

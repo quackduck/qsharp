@@ -1,0 +1,23 @@
+<p>This section describes a more formal process of finding the ket-bra decompositions of multi-qubit quantum gates.
+This section is not necessary to start working with quantum gates, so feel free to skip it for now, and come back to it later.</p>
+<p>You can use the properties of eigenvalues and eigenvectors to find the ket-bra decomposition of any gate. Consider an $N$-qubit gate $A$; the matrix representation of the gate is a square matrix of size $2^N$. Therefore it also has $2^N$ orthogonal eigenvectors $|\psi_i\rangle$</p>
+<p>$$A|\psi_i\rangle = x_i|\psi_i\rangle, 0 \leq i \leq 2^N -1$$</p>
+<p>Then its ket-bra decomposition is:</p>
+<p>$$A = \sum_{i=0}^{2^N-1} x_i|\psi_i\rangle\langle\psi_i|$$</p>
+<p>Let&#39;s use our <code>CNOT</code> gate as a simple example.
+The $\text{CNOT}$ gate has four eigenvectors.</p>
+<ul>
+<li>Two, as we can clearly see, are computational basis states $|00\rangle$ and $|01\rangle$ with eigen values $1$ and $1$, respectively (the basis states that are not affected by the gate).</li>
+<li>The other two are $|1\rangle \otimes |+\rangle = \frac{1}{\sqrt{2}}\big(|10\rangle + |11\rangle\big)$ and $|1\rangle \otimes |-\rangle = \frac{1}{\sqrt{2}}\big(|10\rangle - |11\rangle\big)$ with eigenvalues $1$ and $-1$, respectively:</li>
+</ul>
+<p>$$\text{CNOT}|00\rangle = |00\rangle$$
+$$\text{CNOT}|01\rangle = |01\rangle$$
+$$\text{CNOT}|1+\rangle = |1+\rangle$$
+$$\text{CNOT}|1-\rangle = -|1-\rangle$$</p>
+<p>Here&#39;s what the decomposition looks like:</p>
+<p>$$\text{CNOT} =$$
+$$|00\rangle\langle00| + |01\rangle\langle01| + |1+\rangle\langle1+| - |1-\rangle\langle1-| =$$
+$$|00\rangle\langle00| + |01\rangle\langle01| + \frac{1}{2}\big[\big(|10\rangle + |11\rangle\big)\big(\langle10| + \langle11|\big) - \big(|10\rangle - |11\rangle\big)\big(\langle10| - \langle11|\big)\big] =$$
+$$|00\rangle\langle00| + |01\rangle\langle01| + \frac{1}{2}\big(|10\rangle\langle10| + |10\rangle\langle11| + |11\rangle\langle10| + |11\rangle\langle11| - |10\rangle\langle10| + |10\rangle\langle11| + |11\rangle\langle10| - |11\rangle\langle11|\big) =$$
+$$|00\rangle\langle00| + |01\rangle\langle01| + \frac{1}{2}\big(2|10\rangle\langle11| + 2|11\rangle\langle10|\big) =$$
+$$|00\rangle\langle00| + |01\rangle\langle01| + |10\rangle\langle11| + |11\rangle\langle10|$$</p>

@@ -1,0 +1,10 @@
+<p>We need to apply a gate which applies a global phase of $i$, i.e. $|\psi\rangle \rightarrow i|\psi\rangle$.
+The matrix representation of such a gate is $\begin{bmatrix} i &amp; 0 \\ 0 &amp; i \end{bmatrix} = i\begin{bmatrix} 1 &amp; 0 \\ 0 &amp; 1 \end{bmatrix} = iI$.
+Since we are restricted to the Pauli gates, we use the property that a product of any two distinct Pauli gates equals the third gate with a $+i$ or a $-i$ global phase: $-iXYZ=I$. This can be restated as $XYZ = iI$.
+$$
+\begin{bmatrix} 0 &amp; 1 \\ 1 &amp; 0 \end{bmatrix}\begin{bmatrix} 0 &amp; -i \\ i &amp; 0 \end{bmatrix}\begin{bmatrix} 1 &amp; 0 \\ 0 &amp; -1 \end{bmatrix} = 
+\begin{bmatrix} i &amp; 0 \\ 0 &amp; i \end{bmatrix}
+$$</p>
+<blockquote>
+<p>Remember the rightmost gates in mathematical notation are applied first in Q# code. Hence we first apply the $Z$ gate, followed by the $Y$ gate, and finally the $X$ gate.</p>
+</blockquote>

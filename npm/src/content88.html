@@ -1,0 +1,125 @@
+<p>It is possible to measure a qubit in orthogonal bases other than the Pauli bases. Suppose one wants to measure a qubit in an orthonormal basis $\ket {b_0}$ and $\ket {b_1}$. Let the state of the qubit be represented by the normalized vector $\ket \psi$. Then, one can always express the state in terms of the basis vectors $\ket{b_0}$ and $\ket{b_1}$, i.e., there exist complex numbers $c_0, c_1$, such that
+$$
+\ket \psi = c_0 \ket {b_0} + c_1 \ket {b_1}.
+$$
+The rule for obtaining the probabilities of measurement outcomes is exactly the same as that for the computation basis measurement. For a measurement in a ${ b_0, b_1}$ basis we get</p>
+<ul>
+<li>Outcome $b_0$ with probability $|c_0|^2$ and the post-measurement qubit state of $\ket {b_0}$</li>
+<li>Outcome $b_1$ with probability $|c_1|^2$ and the post-measurement qubit state of $\ket {b_1}$</li>
+</ul>
+<p>This can be summarized in the following table:</p>
+<table>
+    <tr>
+        <th>Measurement outcome</th>
+        <th>Probability of outcome</th>
+        <th>State after measurement</th>
+    </tr>
+    <tr>
+        <td>$b_0$</td>
+        <td>$|c_0|^2$</td>
+        <td>$\ket{b_0}$</td>
+    </tr>
+    <tr>
+        <td>$b_1$</td>
+        <td>$|c_1|^2$</td>
+        <td>$\ket{b_1}$</td>
+    </tr>
+</table>
+
+<p>As before, the assumption of $\ket \psi$ being normalized is important, since it guarantees that the two probabilities add to $1$.</p>
+<blockquote>
+<p>As you may recall, a global phase is said to be hidden or unobservable.
+This is explained by the fact that global phases have no impact on quantum measurements. For example, consider two isolated qubits which are in (normalized) states $\ket \psi$ and $e^{i\theta}\ket \psi$.
+If both are measured in an orthogonal basis ${ \ket{b_0},\ket{b_1}}$, the probabilities of measuring $b_0$ or $b_1$ are identical in both cases, since $|\bra{b_i}\ket{\psi}|^2 = |\bra{b_i}e^{i\theta}\ket{\psi}|^2  $.
+Similarly, for either qubit, if $b_i$ is the measurement outcome, the post-measurement state of the qubit is $\ket{b_i}$ for both qubits. Hence, the measurements are independent of the global phase $\theta$.</p>
+</blockquote>
+<h2>Measurements as Projection Operations</h2>
+<p>Just as qubits are represented by vectors and quantum gates are represented by matrices, quantum measurements are represented by orthogonal projection operators. An orthogonal projection operator is a matrix $P$ which satisfies the following property:
+$$
+P^2 = P^\dagger = P.
+$$
+(As usual, the $\dagger$ symbol denotes conjugate transposition.)</p>
+<p>As the name implies, orthogonal projection operators project the state of the qubit onto an orthogonal subspace. Using the ket-bra representation, one can represent a projection matrix in the Dirac notation.
+For example, one may construct a projector onto the $\ket{0}$ subspace as:
+$$
+P = \ket 0 \bra 0 \equiv \begin{bmatrix} 1 &amp; 0 \\ 0 &amp; 0\end{bmatrix}.
+$$</p>
+<p>A measurement in an orthogonal basis ${ \ket{b_0}, \ket{b_1}}$ is described by a pair of projectors $P_0 = \ket{b_0}\bra{b_0}$ and $P_1 = \ket{b_1}\bra{b_1}$. Since $\ket{b_0}$ and $\ket{b_1}$ are orthogonal, their projectors are also orthogonal, i.e., $P_0 P_1 = P_1 P_0 = 0$. The rules for measurements in this basis can then be summarized as follows:</p>
+<ul>
+<li>Measuring a qubit in a state $\ket \psi$ is done by picking one of these projection operators at random.</li>
+<li>Projection $P_0$ is chosen with probability $|P_0 \ket{\psi}|^2$, and the projector $P_1$ is chosen with probability $|P_1\ket{\psi}|^2.$</li>
+<li>If projector $P_0$ is chosen, the post-measurement state of the qubit is given by
+$$
+\frac1{|P_0 \ket{\psi}|}P_0 \ket\psi,
+$$
+and similarly for $P_1$.</li>
+</ul>
+<p>Although this formalism looks different from the previous sections, it is in fact equivalent. If $\ket \psi = c_0 \ket{b_0} + c_1 \ket{b_1}$, we have
+$$
+P_0 \ket \psi = c_0 \ket{b_0}, \text{so that } | P_0\ket \psi| = c_0,
+$$
+and similarly,
+$$
+P_1 \ket \psi = c_1 \ket{b_1}, \text{so that } |P_1\ket \psi| = c_1.
+$$</p>
+<p>Thus, as before, the probability of measuring $b_0$ is $|P_0\ket\psi|^2 = |c_0|^2$, and the probability of measuring $b_1$ is $|P_1\ket\psi|^2 = |c_1|^2$. Similarly, one can verify that the post-measurement outcomes are also $\ket{b_0}$ and $\ket{b_1}$ respectively (up to unobservable global phases).</p>
+<p>Although the projector formalism for single-qubit systems may seem superfluous, its importance will become clear later while considering measurements for multi-qubit systems.</p>
+<h2>Arbitrary Basis Measurements Implementation</h2>
+<p>In the previous section, we discussed measurements in Pauli bases using the built-in <code>Measure</code> operation. We will now show that it is always possible to measure a qubit in any orthogonal basis using just unitary rotation matrices and computation basis measurements.</p>
+<p>Consider a state $ \ket \psi = c_0 \ket {b_0} + c_1 \ket {b_1} $ which we would like to measure in an orthonormal basis ${ \ket{b_0}, \ket{b_1}}$. First, we construct the following unitary matrix:
+$$
+U = \ket{0} \bra{b_0} + \ket{1} \bra{b_1}
+$$</p>
+<p>The conjugate transpose of this unitary is the operator
+$$
+U^\dagger = \ket{b_0} \bra{0} + \ket{b_1} \bra{1}
+$$</p>
+<p>(One may verify that $U$ is indeed a unitary matrix, by checking that $U^\dagger U = U U^\dagger = I$)</p>
+<p>Note that the effect of these matrices on the two bases is the following:
+$$U\ket{b_0} = \ket{0},$$
+$$U\ket{b_1} = \ket{1},$$
+$$U^\dagger \ket{0} = \ket{b_0},$$
+$$U^\dagger \ket 1 = \ket{b_1}.$$</p>
+<p>In order to implement a measurement in the ${ \ket{b_0}, \ket{b_1} }$ basis, we do the following:</p>
+<ol>
+<li>Apply $U$ to $\ket \psi$.<br>The resulting state is $U\ket \psi = c_0 \ket 0 + c_1 \ket 1 $.</li>
+<li>Measure the state $U\ket{\psi}$ in the computational basis.<br>The outcomes $0$ and $1$ occur with probabilities $|c_0|^2$ and $|c_1|^2$.</li>
+<li>Apply $U^\dagger$ to the post-measurement state.<br>This transforms the states $\ket 0$ and $\ket 1$ to the states $\ket{b_0}$ and $\ket{b_1}$, respectively.</li>
+</ol>
+<p>Thus, $b_0$ and $b_1$ are measured with probabilities $|c_0|^2$ and $|c_1|^2$, respectively, with the end state being $\ket{b_0}$ and $\ket{b_1}$ - which is exactly the measurement we want to implement.</p>
+<p>This procedure can be used to distinguish arbitrary orthogonal states as well, as will become clear from the following exercises.</p>
+<h2>🔎 Analyze</h2>
+<p><strong>The outcome probabilities for a measurement in a specified basis</strong></p>
+<ol>
+<li><p>What are the outcome probabilities of measuring a qubit in the $\ket{0}$ state in the Pauli X basis, i.e., the ${ \ket +, \ket -}$ basis?</p>
+</li>
+<li><p>What are the outcome probabilities of measuring a qubit in the $0.6\ket{0} + 0.8 \ket{1}$ state in the Pauli Y basis, i.e., the ${ \ket i, \ket{-i}}$ basis?</p>
+</li>
+</ol>
+<details>
+<summary><b>Solution</b></summary>
+
+<ol>
+<li><p>To find the probabilities of measuring $+$ and $-$, we first need to express the state $\ket 0$ in terms of $\ket +$ and $\ket -$. Using the fact that $\ket{\pm} = \frac{1}{\sqrt{2}}  (\ket{0} \pm \ket{1})$, we can show that
+ $$
+ \ket 0 = \frac{1}{\sqrt{2}} \ket{+} + \frac{1}{\sqrt{2}} \ket{-}.
+ $$
+ Thus, the probability of measuring $+$ is $|\frac1{\sqrt2}|^2 = 0.5$, and similarly, the probability of measuring $-$ is $0.5$.</p>
+</li>
+<li><p>Similar to the first part, we need to express the state $\ket \psi = 0.6 \ket 0 + 0.8 \ket 1$ in the $\ket{\pm i}$ basis. For this calculation, we use the projection matrix approach.</p>
+<p> First, we recall that the states $\ket{\pm i}$ are given by
+ $$
+ \ket{\pm i} = \frac1{\sqrt2} (\ket 0 \pm i \ket 1).
+ $$</p>
+<p> We can now construct the two projectors $P_{\pm i}$ onto states $\ket {\pm i}$ as follows:
+ $$P_{i} = \ket{i}\bra{i} = \frac{1}{2} \begin{bmatrix} 1 \\ i \end{bmatrix} \begin{bmatrix} 1 &amp; -i \end{bmatrix} = \frac{1}{2} \begin{bmatrix}1 &amp; -i \\ i &amp; 1\end{bmatrix},$$
+ $$P_{-i} = \ket{-i}\bra{-i} = \frac{1}{2} \begin{bmatrix} 1 \\ -i \end{bmatrix} \begin{bmatrix} 1 &amp; i \end{bmatrix} = \frac{1}{2} \begin{bmatrix}1 &amp; i \\ -i &amp; 1\end{bmatrix}.$$</p>
+<p> Recalling that the probabilities of measuring $\pm i$ are equal to the norm of the vectors $P_{\pm i}\ket \psi$, we now apply $P_{\pm i}$ to $\ket \psi$:
+ $$P_{+i} \ket \psi = \frac{1}{2} \begin{bmatrix}1 &amp; -i \\ i &amp; 1\end{bmatrix} \begin{bmatrix} 0.6 \\ 0.8 \end{bmatrix} = \frac{1}{2} \begin{bmatrix} 0.6 - 0.8i \\ 0.8 + 0.6i \end{bmatrix},$$
+ $$P_{-i} \ket \psi = \frac{1}{2} \begin{bmatrix}1 &amp; i \\ -i &amp; 1\end{bmatrix} \begin{bmatrix} 0.6 \\ 0.8 \end{bmatrix} = \frac{1}{2} \begin{bmatrix} 0.6 + 0.8i \\ 0.8 - 0.6i \end{bmatrix}.$$</p>
+<p> Hence, the probabilities of measuring $\pm i$, which we denote by $p(\pm i)$, are:
+ $$p(+i) = |P_{+i} \ket \psi|^2 = \frac{1}{4}(|0.6 - 0.8i|^2 + |0.8 + 0.6i|^2) = \frac{1}{2},$$
+ $$p(-i) = |P_{-i} \ket \psi|^2 = \frac{1}{4}(|0.6 + 0.8i|^2 + |0.8 - 0.6i|^2) = \frac{1}{2}.$$</p>
+</li>
+</ol>
+</details>

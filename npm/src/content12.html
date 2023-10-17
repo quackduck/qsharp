@@ -1,0 +1,10 @@
+<p>Now let&#39;s take a look at the general case: a program that acts on $N$ qubits. 
+The state of the quantum system used by this program can be represented as a complex vector of length $2^N$, or, using Dirac notation,</p>
+<p>$$\begin{bmatrix} x_0 \\ x_1 \\ \vdots \\ x_{2^N-1}\end{bmatrix} = \sum_{k = 0}^{2^N-1} x_k |k\rangle$$</p>
+<p>Same as in the single-qubit case, <code>DumpMachine</code> allows you to see the amplitudes $x_k$ for all basis states $|k\rangle$ directly.</p>
+<blockquote>
+<p>Note the use of an integer in the ket notation instead of a bit string with one bit per qubit. 
+<code>DumpMachine</code> uses big-endian to convert bit strings to integers in the ket notation.
+We will learn more details on endianness in the &quot;Multi-Qubit Systems&quot; kata.</p>
+</blockquote>
+<h2>Demo: DumpMachine for Multi-Qubit Systems</h2>

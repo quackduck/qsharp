@@ -1,0 +1,29 @@
+<p>The exact behavior of this operation called <code>RunExample</code> depends on the quantum simulator or processor you are using.</p>
+<p>On the simulator used in these demos, this function prints the information on each basis state that has a non-zero amplitude, one basis state per row.
+This includes information about the amplitude of the state, the probability of measuring that state, and the phase of the state.</p>
+<p>Note that each row has the following format:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Basis State<br>(|𝜓ₙ…𝜓₁⟩)</th>
+            <th>Amplitude</th>
+            <th>Measurement Probability</th>
+            <th>Phase</th>
+        </tr>
+    </thead>
+</table>
+
+<p>For example, the state $|0\rangle$ would be represented as follows:</p>
+<table>
+    <tbody>
+        <tr>
+            <td>|0⟩</td>
+            <td>1.0000+0.0000𝑖</td>
+            <td>100.0000%</td>
+            <td>↑ 0.0000</td></tr>
+    </tbody>
+</table>
+
+<blockquote>
+<p>It is important to note that although we reason about quantum systems in terms of their state, Q# does not have any representation of the quantum state in the language. Instead, state is an internal property of the quantum system, modified using gates. For more information, see <a href="https://docs.microsoft.com/azure/quantum/concepts-dirac-notation#q-gate-sequences-equivalent-to-quantum-states" target="_blank">Q# documentation on quantum states</a>.</p>
+</blockquote>

@@ -1,0 +1,65 @@
+<p>For a system with $n&gt;1$ qubits, it is possible to measure $m&lt;n$ qubits one after another. The number of measurement outcomes is then $2^m$ instead of $2^n$. The probabilities of each of the outcomes and the post-measurement states of the qubits can be found using the projection formalism for measurements.</p>
+<p>First, we recall the concept of projection operators introduced in the single-qubit systems measurements kata. Measurements are modeled by orthogonal projection operators - matrices that satisfy
+$$P^2 = P^\dagger = P$$
+Consider an $n$-qubit system in a state $|\psi\rangle$, for which the first $m&lt;n$ qubits are measured in an orthogonal basis ${ |b_0\rangle , |b_1\rangle, \dotsc, |b_{2^m-1}\rangle}$ corresponding to the $m$ qubits being measured. Then we define $2^m$ projectors corresponding to each of the $|b_i\rangle$ states as</p>
+<p>$$P_i = |b_i\rangle \langle b_i| \otimes \mathbb{1}_{n-m} $$</p>
+<p>where $\mathbb{1}_{n-m}$ is the identity operator over the remaining $(n-m)$ qubits.</p>
+<p>The symbol $\otimes$ represents the tensor product or the Kronecker product of two matrices. It is different from the usual matrix multiplication.
+In the current context, $|b_i\rangle \langle b_i| \otimes \mathbb{1}_{n-m}$ simply means that </p>
+<ul>
+<li>The operator $|b_i\rangle \langle b_i|$ acts only on the $m$ qubits being measured.</li>
+<li>The effect of $P_i$ on the remaining qubits is $\mathbb{1}_{n-m} $, i.e., the identity operator.</li>
+</ul>
+<p>Analogous to the case for measurements for single-qubit systems, the rules for partial measurement probabilities and outcomes can be summarized as follows:</p>
+<ul>
+<li>When a measurement is done, one of these projectors is chosen randomly. The probability of choosing projector $P_i$ is $\big|P_i|\psi\rangle\big|^2$.</li>
+<li>If the projector $P_i$ is chosen, the measurement outcome is $b_i$, and the state of the system after the measurement is given by
+$$
+\frac{P_i |\psi\rangle}{\big|P_i |\psi\rangle\big|}.
+$$</li>
+</ul>
+<p>For example, consider a two-qubit system in the state $\ket \psi = \frac{1}{\sqrt{2}}\ket{01} - \frac{1}{\sqrt 2}\ket{10}$. Consider a measurement of the first qubit in the computational basis, i.e., in the ${\ket 0 , \ket 1 }$ basis. Then, we have two projectors that represent this measurement:
+$$P_0 = \ket 0\bra 0 \otimes \mathbb{1}$$
+$$P_1 = \ket 1 \bra 1 \otimes \mathbb{1}$$</p>
+<p>The action of $P_0$ on $\ket \psi$ is</p>
+<p>$$P_0 \ket \psi$$</p>
+<p>$$= \left(\ket 0\bra 0 \otimes \mathbb{1}\right) \frac{1}{\sqrt 2}\big(\ket{01} - \ket{10}\big)$$</p>
+<p>$$= \frac{1}{\sqrt 2} \big( \ket 0\bra 0 0\rangle \otimes \mathbb{1} \ket{1} - \ket 0 \bra 0 1\rangle \otimes \mathbb{1} \ket 0 \big)$$</p>
+<p>$$= \frac{1}{\sqrt 2} \ket{01}$$</p>
+<p>Similarly, we obtain
+$$P_1 \ket\psi = -\frac{1}{\sqrt 2} \ket{10}$$</p>
+<p>Clearly, we have $\big|P_0 \ket \psi\big| = \big|P_1 \ket \psi\big| = \frac{1}{2}$ in this case. Thus, the probabilities of measuring $0$ and $1$ are both $0.5$, with the post-measurement states of system being $\ket{01}$ and $\ket{10}$, respectively.</p>
+<blockquote>
+<p>Similar to the case of single-qubit system measurements, the applicability of the formalism above requires the state of the multi-qubit system, $\ket \psi$, to be normalized. This is required to ensure that all the probabilities of individual outcomes add up to 1.</p>
+</blockquote>
+<h2>🔎 Analyze</h2>
+<p><strong>Partial measurement probabilities for the Hardy state</strong></p>
+<p>Consider a 2-qubit system in the state $\ket \psi = \frac{1}{\sqrt{12}} \big(3|00\rangle + |01\rangle + |10\rangle + |11\rangle\big)$.</p>
+<p>If only the first qubit is measured in the computational basis, what are the probabilities of the outcomes, and the post-measurement states of the system?</p>
+<details>
+<summary><b>Solution</b></summary>
+A measurement outcome of $0$ on the first qubit corresponds to the projection operator $P_0 = |0\rangle\langle 0| \otimes \mathbb{1}$. Applying it to the state $\ket \psi$ gives us 
+$$\big|P_0 \ket{\psi}\big|^2 = \big|\frac{1}{\sqrt{12}} \left(3\ket {00} + \ket{01}\right) \big|^2 = \frac{5}{6}$$
+and 
+$$\frac{P_0 \ket{\psi}}{\big|P_0 \ket{\psi}\big|} = \frac{1}{\sqrt{10}} \left( 3\ket{00} + \ket{01}\right)$$
+
+<p>Similarly, $P_1 = |1\rangle \langle 1 | \otimes \mathbb{1}$ is the projector corresponding to a measurement outcome of $1$ on the first qubit. Applying $P_1$ on $\ket{\psi}$ gives us $\big|P_1 \ket{\psi}\big|^2 = \frac{1}{6}$ and </p>
+<p>$$\frac{P_1 \ket{\psi}}{\big|P_1 \ket{\psi}\big|} = \frac{1}{\sqrt{2}} \left(\ket{10} + \ket{11}\right)$$</p>
+<table>
+    <tr>
+        <th>Measurement outcome</th>
+        <th>Probability of outcome</th>
+        <th>Post-measurement state</th>
+    </tr>
+    <tr>
+        <td>$0$</td>
+        <td>$\frac{5}{6}$</td>
+        <td>$\frac{1}{\sqrt{10}} \left( 3\ket{00} + \ket{01}\right)$</td>
+    </tr> 
+    <tr>
+        <td>$1$</td>
+        <td>$\frac{1}{6}$</td>
+        <td>$\frac{1}{\sqrt{2}} \left(\ket{10} + \ket{11}\right)$</td>
+    </tr> 
+</table>
+</details>
