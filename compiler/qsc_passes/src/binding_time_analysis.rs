@@ -34,19 +34,15 @@ enum RuntimeCapability {
     HigherLevelConstructs,
 }
 
-struct CapabilityUsage {
-    capability: RuntimeCapability,
+struct NodeCapabilities {
     id: NodeId,
-}
-
-struct ParameterCapabilities {
-    id: NodeId,
-    usages: Vec<CapabilityUsage>,
+    capabilities: Vec<RuntimeCapability>,
 }
 
 struct CallableCapabilities {
     id: NodeId,
-    parameter_capabilities: Vec<ParameterCapabilities>,
+    inherent_capabilities: Vec<NodeCapabilities>,
+    parameter_capabilities: Vec<NodeCapabilities>,
 }
 
 struct Analyzer {
