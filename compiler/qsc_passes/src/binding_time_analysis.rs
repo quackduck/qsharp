@@ -1,6 +1,9 @@
 use miette::Diagnostic;
 use qsc_data_structures::span::Span;
-use qsc_hir::{hir::{CallableDecl, Package}, visit::{Visitor, walk_package}};
+use qsc_hir::{
+    hir::{CallableDecl, NodeId, Package},
+    visit::{walk_package, Visitor},
+};
 use thiserror::Error;
 
 #[derive(Clone, Debug, Diagnostic, Error)]
@@ -14,13 +17,41 @@ pub enum Error {
 }
 
 pub fn check_runtime_capabilities(package: &Package) -> Vec<Error> {
-    let mut analyzer = Analyzer { errors: Vec::new() };
+    let mut analyzer = Analyzer {
+        errors: Vec::new(),
+        callable_capabilities: Vec::new(),
+    };
     analyzer.visit_package(package);
     analyzer.errors
 }
 
+enum RuntimeCapability {
+    ConditionalForwardBranching,
+    IntegerComputations,
+    FloatingPointComputationg,
+    BackwardsBranching,
+    UserDefinedFunctionCalls,
+    HigherLevelConstructs,
+}
+
+struct CapabilityUsage {
+    capability: RuntimeCapability,
+    id: NodeId,
+}
+
+struct ParameterCapabilities {
+    id: NodeId,
+    usages: Vec<CapabilityUsage>,
+}
+
+struct CallableCapabilities {
+    id: NodeId,
+    parameter_capabilities: Vec<ParameterCapabilities>,
+}
+
 struct Analyzer {
     errors: Vec<Error>,
+    callable_capabilities: Vec<CallableCapabilities>,
 }
 
 impl Visitor<'_> for Analyzer {
