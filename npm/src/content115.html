@@ -1,5 +1,5 @@
 <p>Joint measurements, also known as Pauli measurements, are a generalization of 2-outcome measurements to multiple qubits and other bases. In Q#, joint measurements in Pauli bases are implemented using the <a href="https://docs.microsoft.com/en-us/qsharp/api/qsharp/microsoft.quantum.intrinsic.measure" target="_blank"><code>Measure</code></a> operation. Let&#39;s review single-qubit measurements in a different light before discussing joint measurements.</p>
-<h2>Single-Qubit Pauli Measurement</h2>
+<h2 id="single-qubit-pauli-measurement">Single-Qubit Pauli Measurement</h2>
 <p>For single-qubit systems, any measurement corresponding to an orthogonal basis can be associated with a Hermitian matrix with eigenvalues $\pm 1$. The possible measurement outcomes (represented as <code>Result</code> in Q#) are the eigenvalues of the Hermitian matrix, and the corresponding projection matrices for the measurement are the projection operators onto the <em>eigenspaces</em> corresponding to the eigenvalues.</p>
 <p>For example, consider the computational basis measurement, which can result in outcomes <code>Zero</code> or <code>One</code> corresponding to states $\ket 0$ and $\ket 1$. This measurement is associated with the Pauli Z operator, which is given by</p>
 <p>$$Z = \begin{pmatrix} 1 &amp; 0 \\ 0 &amp; -1\end{pmatrix} = \ket{0}\bra{0} - \ket{1}\bra{1}$$</p>
@@ -50,7 +50,7 @@
 
 <p>In general, any measurement on a single qubit which results in two outcomes corresponds to the Hermitian operator $U Z U^\dagger$, for some $2\times 2$ unitary matrix $U$.</p>
 <p>Joint measurements are a generalization of this principle for multi-qubit matrices.</p>
-<h2>Parity Measurements</h2>
+<h2 id="parity-measurements">Parity Measurements</h2>
 <p>The simplest joint measurement is a parity measurement. A parity measurement treats computational basis vectors differently depending on whether the number of 1&#39;s in the basis vector is even or odd.</p>
 <p>For example, the operator $Z\otimes Z$, or $ZZ$ in short, is the parity measurement operator for a two-qubit system. The eigenvalues $1$ and $-1$ correspond to the subspaces spanned by basis vectors ${ |00\rangle, |11\rangle }$ and ${ |01\rangle, |10\rangle }$, respectively. That is, when a $ZZ$ measurement results in a <code>Zero</code> (i.e. the eigenvalue $+1$), the post-measurement state is a superposition of only those computational basis vectors which have an even number of $1$&#39;s. On the other hand, a result of <code>One</code> corresponds to a post-measurement state with only odd parity computational basis vectors.</p>
 <p>Let&#39;s see what happens to various two-qubit states after the parity measurement. The $Z \otimes Z$ matrix for two qubits is:</p>

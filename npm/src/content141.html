@@ -2,6 +2,6 @@
 <p>$$U_{mark}|\vec{x}\rangle |y\rangle = U_{mark}\big(|\vec{x}\rangle \otimes |y\rangle\big) = |\vec{x}\rangle \otimes |y \oplus f(x)\rangle$$</p>
 <p>Again, since all quantum operations are linear, you can figure out the effect of this operation on superposition state knowing its effect on the basis states using its linearity. </p>
 <p>A marking oracle has distinct &quot;input&quot; and &quot;output&quot; qubits, but in general the effect of the oracle application is the change in the state of the whole system rather than of the &quot;output&quot; qubits only. We will look at this closer in a moment.</p>
-<h2>Marking Oracle for Alternating Bit Pattern Function</h2>
+<h2 id="marking-oracle-for-alternating-bit-pattern-function">Marking Oracle for Alternating Bit Pattern Function</h2>
 <p>Consider the function $f(x)$ that takes $3$ bits of input and returns $1$ if $x=101$ or $x=010$, and $0$ otherwise (it is the same function we&#39;ve seen in the demo &quot;Phase oracle for alternating bit pattern function&quot;).</p>
 <p>The marking oracle that implements this function will take an array of 3 qubits as an &quot;input&quot; register and an &quot;output&quot; qubit, and will flip the state of the output qubit if the input qubit was in basis state $|101\rangle$ or $|010\rangle$, and do nothing otherwise. Let&#39;s see the effect of this oracle on a superposition state.</p>

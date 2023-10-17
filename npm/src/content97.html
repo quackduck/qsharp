@@ -5,7 +5,7 @@
 <li>Joint measurement: measuring a joint property of all $n$ qubits ($2$ possible outcomes).</li>
 </ul>
 <p>We will discuss these concepts in the same order as in the list above.</p>
-<h2>Full Measurements: Measurements in Multi-Qubit Bases</h2>
+<h2 id="full-measurements-measurements-in-multi-qubit-bases">Full Measurements: Measurements in Multi-Qubit Bases</h2>
 <p>Consider a system consisting of $n\geq1$ qubits. The wave function of such a system belongs to a vector space of dimension $2^n$. Thus, the vector space is spanned by an orthogonal basis, such as the computational basis which consists of the vectors $|0\dotsc0\rangle, \dotsc, |1\dotsc 1\rangle$. For generality, we consider an arbitrary orthonormal basis, which we denote by ${ |b_0\rangle, |b_1\rangle, \dotsc, |b_{2^n-1}\rangle }$.</p>
 <p>Then, the state $|\psi\rangle$ of the multi-qubit system can be expressed as a linear combination of the $2^n$ basis vectors $|b_i\rangle$. That is, there exist complex numbers $c_0,c_1,\dotsc, c_{2^n-1}$ such that</p>
 <p>$$
@@ -33,7 +33,7 @@ $$</p>
 <blockquote>
 <p>Similar to measurements in single-qubit systems, the assumption of normalization of the original wave function is required in order to ensure that the sum of all the outcome probabilities is 1.</p>
 </blockquote>
-<h2>Multi-Qubit Measurement Outcome Probabilities I</h2>
+<h2 id="multi-qubit-measurement-outcome-probabilities-i">Multi-Qubit Measurement Outcome Probabilities I</h2>
 <p>Suppose that a two-qubit system is known to be in the following state:
 $$\ket \psi =  \frac{1}{3}\ket {00} + \frac{2}{3} \ket {01} + \frac{2}{3}\ket {11}$$</p>
 <p>If all the qubits are measured simultaneously in the computational basis, what are the outcome probabilities?</p>
@@ -62,11 +62,11 @@ $$\ket \psi =  \frac{1}{3}\ket {00} + \frac{2}{3} \ket {01} + \frac{2}{3}\ket {1
 </table>
 </details>
 
-<h2>Multi-Qubit Measurement Outcome Probabilities II</h2>
+<h2 id="multi-qubit-measurement-outcome-probabilities-ii">Multi-Qubit Measurement Outcome Probabilities II</h2>
 <p>Suppose that a two-qubit system is known to be in the following state:
 $$\ket \psi = \frac{2}{3}\ket {00} + \frac{1}{3} \ket {01} + \frac{2}{3}\ket {11}$$</p>
 <p>If all the qubits are measured simultaneously in the Pauli X basis, that is, in the ${ \ket{++}, \ket{+-}, \ket{-+}, \ket{--}}$ basis, what are the outcome probabilities?</p>
-<h3>Analytical Solution</h3>
+<h3 id="analytical-solution">Analytical Solution</h3>
 <p>Using the expressions $|0\rangle = \frac{1}{\sqrt{2}} \big( |+\rangle + |-\rangle \big)$ and $|1\rangle = \frac{1}{\sqrt{2}} \big( |+\rangle - |-\rangle \big)$, we first express $|\psi\rangle$ in the Pauli X basis. This gives us
 $$\ket \psi =  \frac{2}{3}\ket {00} + \frac{1}{3} \ket {01} + \frac{2}{3}\ket {11}$$</p>
 <p>$$= \frac{2}{3} \big[ \frac{1}{\sqrt{2}}\big(\ket{+} + \ket{-}\big) \otimes \frac{1}{\sqrt{2}} \big(\ket{+} + \ket{-}\big) \big] + \frac{1}{3} \big[ \frac{1}{\sqrt{2}}\big(\ket{+} + \ket{-}\big) \otimes \frac{1}{\sqrt{2}} \big(\ket{+} - \ket{-}\big) \big] + \frac{2}{3} \big[ \frac{1}{\sqrt{2}}\big(\ket{+} - \ket{-}\big) \otimes \frac{1}{\sqrt{2}} \big(\ket{+} - \ket{-}\big) \big]$$</p>
@@ -98,7 +98,7 @@ $$\ket \psi =  \frac{2}{3}\ket {00} + \frac{1}{3} \ket {01} + \frac{2}{3}\ket {1
     </tr> 
 </table>
 
-<h3>Code-Based Solution</h3>
+<h3 id="code-based-solution">Code-Based Solution</h3>
 <p>We can also use Q# to solve this problem. It can be achieved in three steps:</p>
 <ol>
 <li>Prepare the state $\ket \psi$.</li>

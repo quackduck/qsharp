@@ -1,18 +1,18 @@
 <p>In the above examples the <code>CNOT</code> gate acted on two adjacent qubits. However, multi-qubit gates can act on non-adjacent qubits as well. Let&#39;s see how to work out the math of the system state change in this case.</p>
 <p>Take 3 qubits in an arbitrary state $|\psi\rangle = x_{000} |000\rangle + x_{001}|001\rangle + x_{010}|010\rangle + x_{011}|011\rangle + x_{100}|100\rangle + x_{101}|101\rangle + x_{110}|110\rangle + x_{111}|111\rangle $.</p>
 <p>We can apply the <code>CNOT</code> gate on 1st and 3rd qubits, with the 1st qubit as control and the 3rd qubit as target. Let&#39;s label the 3-qubit gate that describes the effect of this on the whole system as <code>CINOT</code>. The <code>CINOT</code> ignores the 2nd qubit (leaves it unchanged) and applies the <code>CNOT</code> gate as specified above.</p>
-<h2>Q#</h2>
+<h2 id="q">Q#</h2>
 <p>In Q# we describe the operation as the sequence of gates that are applied to the qubits, regardless of whether the qubits are adjacent or not.</p>
 <pre><code class="language-qsharp">operation CINOT (qs: Qubit[]) : Unit {
     CNOT(qs[0], qs[2]); // Length of qs is assumed to be 3
 }
 </code></pre>
-<h2>Dirac Notation</h2>
+<h2 id="dirac-notation">Dirac Notation</h2>
 <p>In Dirac notation we can consider the effect of the gate on each basis vector separately: each basis vector $|a_1a_2a_3\rangle$ remains unchanged if $a_1 = 0$, and becomes $|a_1a_2(\neg a_3)\rangle$ if $a_1 = 1$. The full effect on the state becomes:</p>
 <p>$$\text{CINOT}|\psi\rangle = x_{000} \text{CINOT}|000\rangle + x_{001} \text{CINOT}|001\rangle + x_{010} \text{CINOT}|010\rangle + x_{011} \text{CINOT}|011\rangle+$$
 $$x_{100} \text{CINOT}|100\rangle + x_{101} \text{CINOT}|101\rangle + x_{110} \text{CINOT}|110\rangle + x_{111} \text{CINOT}|111\rangle =$$
 $$x_{000}|000\rangle + x_{001}|001\rangle + x_{010}|010\rangle + x_{011}|011\rangle + x_{101}|100\rangle + x_{100}|101\rangle + x_{111}|110\rangle + x_{110}|111\rangle $$</p>
-<h2>Matrix Form</h2>
+<h2 id="matrix-form">Matrix Form</h2>
 <p>$\text{CINOT}$ can also be represented in matrix form as a $2^3 \times 2^3$ matrix:
 $$
 \begin{bmatrix}
