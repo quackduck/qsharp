@@ -71,13 +71,13 @@ export class WorkspaceTreeProvider
   }
 
   getTreeItem(
-    element: WorkspaceTreeItem
+    element: WorkspaceTreeItem,
   ): vscode.TreeItem | Thenable<vscode.TreeItem> {
     return element;
   }
 
   getChildren(
-    element?: WorkspaceTreeItem | undefined
+    element?: WorkspaceTreeItem | undefined,
   ): vscode.ProviderResult<WorkspaceTreeItem[]> {
     if (!element) {
       return [...this.treeState.values()].map(
@@ -86,8 +86,8 @@ export class WorkspaceTreeProvider
             workspace.name,
             workspace,
             "workspace",
-            workspace
-          )
+            workspace,
+          ),
       );
     } else {
       return element.getChildren();
@@ -178,7 +178,7 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
       | Target[]
       | Target
       | Job[]
-      | Job
+      | Job,
   ) {
     super(label, vscode.TreeItemCollapsibleState.Collapsed);
 
@@ -215,11 +215,11 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
             ${
               shouldShowQueueTime(target)
                 ? `__Queue time__: ${getQueueTimeText(
-                    target.averageQueueTime
+                    target.averageQueueTime,
                   )}<br>`
                 : ""
             }
-            ${supportsQir ? "" : "\n" + noQirMsq}`
+            ${supportsQir ? "" : "\n" + noQirMsq}`,
           );
           hover.supportHtml = true;
           this.tooltip = hover;
@@ -265,7 +265,7 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
               ? `__Completed__: ${localDate(job.endExecutionTime)}<br>`
               : ""
           }
-        `
+        `,
         );
         hover.supportHtml = true;
         this.tooltip = hover;
@@ -285,13 +285,13 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
             "Providers",
             this.workspace,
             "providerHeader",
-            this.workspace.providers
+            this.workspace.providers,
           ),
           new WorkspaceTreeItem(
             "Jobs",
             this.workspace,
             "jobHeader",
-            this.workspace.jobs
+            this.workspace.jobs,
           ),
         ];
 
@@ -302,13 +302,13 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
               provider.providerId,
               this.workspace,
               "provider",
-              provider
-            )
+              provider,
+            ),
         );
       case "provider":
         return (this.itemData as Provider).targets.map(
           (target) =>
-            new WorkspaceTreeItem(target.id, this.workspace, "target", target)
+            new WorkspaceTreeItem(target.id, this.workspace, "target", target),
         );
       case "jobHeader":
         return (this.itemData as Job[]).map(
@@ -317,8 +317,8 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
               job.name || job.id,
               this.workspace,
               "job",
-              job
-            )
+              job,
+            ),
         );
       case "target":
       case "job":

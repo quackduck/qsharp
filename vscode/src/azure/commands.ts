@@ -85,19 +85,19 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
       await vscode.commands.executeCommand(
         "setContext",
         "qsharp-vscode.treeItemSupportsQir",
-        supportsQir
+        supportsQir,
       );
       await vscode.commands.executeCommand(
         "setContext",
         "qsharp-vscode.treeItemSupportsDownload",
-        supportsDownload
+        supportsDownload,
       );
       await vscode.commands.executeCommand(
         "setContext",
         "qsharp-vscode.treeItemIsWorkspace",
-        isWorkspace
+        isWorkspace,
       );
-    })
+    }),
   );
 
   context.subscriptions.push(
@@ -138,7 +138,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
 
         const quantumUris = new QuantumUris(
           treeItem.workspace.endpointUri,
-          treeItem.workspace.id
+          treeItem.workspace.id,
         );
 
         try {
@@ -147,7 +147,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
             quantumUris,
             payload,
             providerId,
-            target.id
+            target.id,
           );
           if (jobId) {
             // The job submitted fine. Refresh the workspace until it shows up
@@ -159,12 +159,12 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
           vscode.window.showErrorMessage(
             "Failed to submit the job to Azure. " +
               "Ensure CORS is configured correctly on the workspace storage account. " +
-              `See ${corsDocsUri} for more information.`
+              `See ${corsDocsUri} for more information.`,
           );
           return;
         }
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -178,7 +178,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
           startRefreshCycle(workspaceTreeProvider, workspace);
         }
       });
-    })
+    }),
   );
 
   async function saveWorkspaceList() {
@@ -203,7 +203,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
     log.debug("Saving workspaces: ", savedWorkspaces);
     await context.secrets.store(
       workspacesSecret,
-      JSON.stringify(savedWorkspaces)
+      JSON.stringify(savedWorkspaces),
     );
   }
 
@@ -220,7 +220,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
         // NOTE: This should be removed once talking directly to Azure storage is no longer required.
         const quantumUris = new QuantumUris(
           workspace.endpointUri,
-          workspace.id
+          workspace.id,
         );
 
         const token = await getTokenForWorkspace(workspace);
@@ -235,14 +235,14 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
               `Would you like to visit the documentation page at ${corsDocsUri} for details on how to configure this?`,
             { modal: true },
             { title: "Open CORS documentation", action: "open" },
-            { title: "Cancel", action: "cancel", isCloseAffordance: true }
+            { title: "Cancel", action: "cancel", isCloseAffordance: true },
           );
           if (selection?.action === "open") {
             vscode.env.openExternal(vscode.Uri.parse(corsDocsUri));
           }
         }
       }
-    })
+    }),
   );
 
   context.subscriptions.push(
@@ -256,8 +256,8 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
 
         workspaceTreeProvider.removeWorkspace(workspace.id);
         await saveWorkspaceList();
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -283,7 +283,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
 
         const quantumUris = new QuantumUris(
           treeItem.workspace.endpointUri,
-          treeItem.workspace.id
+          treeItem.workspace.id,
         );
 
         try {
@@ -300,12 +300,12 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
           vscode.window.showErrorMessage(
             "Failed to download the results file. " +
               "Ensure CORS is configured correctly on the workspace storage account. " +
-              `See ${corsDocsUri} for more information.`
+              `See ${corsDocsUri} for more information.`,
           );
           return;
         }
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -320,15 +320,15 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
         if (str) {
           vscode.env.clipboard.writeText(str);
           vscode.window.showInformationMessage(
-            "Python code has been copied to the clipboard"
+            "Python code has been copied to the clipboard",
           );
         } else {
           vscode.window.showErrorMessage(
-            "Failed to generate Python code for workspace"
+            "Failed to generate Python code for workspace",
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -342,7 +342,7 @@ export async function initAzureWorkspaces(context: vscode.ExtensionContext) {
 
         const link = getAzurePortalWorkspaceLink(workspace);
         vscode.env.openExternal(vscode.Uri.parse(link));
-      }
-    )
+      },
+    ),
   );
 }

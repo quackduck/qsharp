@@ -24,7 +24,7 @@ export function registerQSharpNotebookHandlers() {
       if (notebookDocument.notebookType === jupyterNotebookType) {
         updateQSharpCellLanguages(notebookDocument.getCells());
       }
-    })
+    }),
   );
 
   subscriptions.push(
@@ -39,7 +39,7 @@ export function registerQSharpNotebookHandlers() {
           .flat();
         updateQSharpCellLanguages(changedCells.concat(addedCells));
       }
-    })
+    }),
   );
 
   function updateQSharpCellLanguages(cells: vscode.NotebookCell[]) {
@@ -53,7 +53,7 @@ export function registerQSharpNotebookHandlers() {
         ) {
           vscode.languages.setTextDocumentLanguage(
             cell.document,
-            qsharpLanguageId
+            qsharpLanguageId,
           );
           sendTelemetryEvent(EventType.QSharpJupyterCellInitialized);
         }
