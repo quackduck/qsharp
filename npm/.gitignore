@@ -1,3 +1,4 @@
 dist/
 lib/
 src/*.generated.*
+!src/katas-content.generated.*
