@@ -15,9 +15,11 @@ use qsc_frontend::{
 };
 use qsc_hir::hir::{Package, PackageId};
 use qsc_passes::PackageType;
+use qsc_runtime_capabilities::{self, analyze_store_capabilities};
 use std::{
-    concat, fs,
-    io::{self, Read},
+    concat,
+    fs::{self, File},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     process::ExitCode,
     string::String,
@@ -85,6 +87,16 @@ fn main() -> miette::Result<ExitCode> {
     let (unit, errors) = compile(&store, &dependencies, sources, package_type, target);
     let package_id = store.insert(unit);
     let unit = store.get(package_id).expect("package should be in store");
+
+    // TODO: Consider whether rutime capabilities analysis should always be performed.
+    let runtime_capabilities = analyze_store_capabilities(&store);
+
+    // DBG: Save capabilities to a file for debugging purposes.
+    let mut capabilities_file =
+        File::create("dbg/capabilities.txt").expect("File could be created");
+    let capabilities_string = format!("{runtime_capabilities:#?}");
+    write!(capabilities_file, "{capabilities_string}")
+        .expect("Saving runtime capabilities to file should succeed.");
 
     let out_dir = cli.out_dir.as_ref().map_or(".".as_ref(), PathBuf::as_path);
     for emit in &cli.emit {
