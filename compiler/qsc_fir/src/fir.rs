@@ -386,12 +386,13 @@ impl Display for Item {
             write!(indent, "\nParent: {parent}")?;
         }
 
-        if !self.doc.is_empty() {
-            write!(indent, "\nDoc:")?;
-            indent = set_indentation(indent, 2);
-            write!(indent, "\n{}", self.doc)?;
-            indent = set_indentation(indent, 1);
-        }
+        // TODO (cesarzc): To make debugging more compact and easier to read.
+        //if !self.doc.is_empty() {
+        //    write!(indent, "\nDoc:")?;
+        //    indent = set_indentation(indent, 2);
+        //    write!(indent, "\n{}", self.doc)?;
+        //    indent = set_indentation(indent, 1);
+        //}
 
         for attr in &self.attrs {
             write!(indent, "\n{attr:?}")?;
