@@ -4,6 +4,7 @@
 #[cfg(test)]
 mod tests;
 
+use crate::qir_writer::{write_output_recording, Double, Qubit, Result};
 use num_bigint::BigUint;
 use num_complex::Complex;
 use qsc_data_structures::index_map::IndexMap;
@@ -18,7 +19,7 @@ use qsc_eval::{
 use qsc_fir::fir::{BlockId, ExprId, ItemKind, PackageId, PatId, StmtId};
 use qsc_frontend::compile::PackageStore;
 use qsc_hir::hir::{self};
-use std::fmt::{Display, Write};
+use std::fmt::Write;
 
 /// # Errors
 ///
@@ -149,8 +150,7 @@ impl BaseProfSim {
     #[must_use]
     pub fn finish(mut self, val: &Value) -> String {
         self.instrs.push_str(&self.measurements);
-        self.write_output_recording(val)
-            .expect("writing to string should succeed");
+        write_output_recording(&mut self.instrs, val);
 
         write!(
             self.instrs,
@@ -178,51 +178,6 @@ impl BaseProfSim {
             self.qubit_map.insert(qubit, mapped);
             mapped
         }
-    }
-
-    fn write_output_recording(&mut self, val: &Value) -> std::fmt::Result {
-        match val {
-            Value::Array(arr) => {
-                self.write_array_recording(arr.len())?;
-                for val in arr.iter() {
-                    self.write_output_recording(val)?;
-                }
-            }
-            Value::Result(r) => {
-                self.write_result_recording(r.unwrap_id());
-            }
-            Value::Tuple(tup) => {
-                self.write_tuple_recording(tup.len())?;
-                for val in tup.iter() {
-                    self.write_output_recording(val)?;
-                }
-            }
-            _ => panic!("unexpected value type: {val:?}"),
-        }
-        Ok(())
-    }
-
-    fn write_result_recording(&mut self, res: usize) {
-        writeln!(
-            self.instrs,
-            "  call void @__quantum__rt__result_record_output({}, i8* null)",
-            Result(res),
-        )
-        .expect("writing to string should succeed");
-    }
-
-    fn write_tuple_recording(&mut self, size: usize) -> std::fmt::Result {
-        writeln!(
-            self.instrs,
-            "  call void @__quantum__rt__tuple_record_output(i64 {size}, i8* null)"
-        )
-    }
-
-    fn write_array_recording(&mut self, size: usize) -> std::fmt::Result {
-        writeln!(
-            self.instrs,
-            "  call void @__quantum__rt__array_record_output(i64 {size}, i8* null)"
-        )
     }
 }
 
@@ -494,36 +449,5 @@ impl Backend for BaseProfSim {
 
     fn reinit(&mut self) {
         *self = Self::default();
-    }
-}
-
-struct Qubit(usize);
-
-impl Display for Qubit {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "%Qubit* inttoptr (i64 {} to %Qubit*)", self.0)
-    }
-}
-
-struct Result(usize);
-
-impl Display for Result {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "%Result* inttoptr (i64 {} to %Result*)", self.0)
-    }
-}
-
-struct Double(f64);
-
-impl Display for Double {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let v = self.0;
-        if (v.floor() - v.ceil()).abs() < f64::EPSILON {
-            // The value is a whole number, which requires at least one decimal point
-            // to differentiate it from an integer value.
-            write!(f, "double {v:.1}")
-        } else {
-            write!(f, "double {v}")
-        }
     }
 }
