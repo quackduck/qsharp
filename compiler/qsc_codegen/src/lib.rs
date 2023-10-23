@@ -5,5 +5,5 @@
 #![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
 pub mod qir_base;
-mod qir_writer;
 pub mod qir_gen;
+mod qir_writer;

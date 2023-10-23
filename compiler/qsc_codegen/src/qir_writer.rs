@@ -100,11 +100,8 @@ fn write_array_recording(w: &mut impl Write, size: usize) {
 }
 
 pub(crate) fn write_intrinsic(w: &mut impl Write, callee: &str, args: &[Lit]) {
-    writeln!(
-        w,
-        "  call void @{callee}({})",
-        to_qir_args(args.iter()),
-    ).expect("writing to string should succeed");
+    writeln!(w, "  call void @{callee}({})", to_qir_args(args.iter()),)
+        .expect("writing to string should succeed");
 }
 
 fn to_qir_args<'a>(mut args: impl Iterator<Item = &'a Lit>) -> String {

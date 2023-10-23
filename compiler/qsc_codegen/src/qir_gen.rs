@@ -1,7 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use qsc_fir::{fir::{ExprId, Package, BlockId, PatId, StmtId, Block, Expr, Pat, Stmt}, visit::Visitor};
+use qsc_fir::{
+    fir::{Block, BlockId, Expr, ExprId, Package, Pat, PatId, Stmt, StmtId},
+    visit::Visitor,
+};
 
 #[must_use]
 pub fn generate_qir(package: &Package, expr: ExprId) -> String {
