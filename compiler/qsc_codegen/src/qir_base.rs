@@ -4,11 +4,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::qir_writer::{
-    write_ccx, write_cx, write_cy, write_cz, write_h, write_mz, write_output_recording, write_rx,
-    write_rxx, write_ry, write_ryy, write_rz, write_rzz, write_s, write_sadj, write_swap, write_t,
-    write_tadj, write_x, write_y, write_z,
-};
+use crate::qir_writer::{write_output_recording, Double, Qubit, Result};
 use num_bigint::BigUint;
 use num_complex::Complex;
 use qsc_data_structures::index_map::IndexMap;
@@ -192,30 +188,60 @@ impl Backend for BaseProfSim {
         let ctl0 = self.map(ctl0);
         let ctl1 = self.map(ctl1);
         let q = self.map(q);
-        write_ccx(&mut self.instrs, ctl0, ctl1, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__ccx__body({}, {}, {})",
+            Qubit(ctl0),
+            Qubit(ctl1),
+            Qubit(q)
+        )
+        .expect("writing to string should succeed");
     }
 
     fn cx(&mut self, ctl: usize, q: usize) {
         let ctl = self.map(ctl);
         let q = self.map(q);
-        write_cx(&mut self.instrs, ctl, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__cx__body({}, {})",
+            Qubit(ctl),
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn cy(&mut self, ctl: usize, q: usize) {
         let ctl = self.map(ctl);
         let q = self.map(q);
-        write_cy(&mut self.instrs, ctl, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__cy__body({}, {})",
+            Qubit(ctl),
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn cz(&mut self, ctl: usize, q: usize) {
         let ctl = self.map(ctl);
         let q = self.map(q);
-        write_cz(&mut self.instrs, ctl, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__cz__body({}, {})",
+            Qubit(ctl),
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn h(&mut self, q: usize) {
         let q = self.map(q);
-        write_h(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__h__body({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn m(&mut self, q: usize) -> Self::ResultType {
@@ -223,7 +249,13 @@ impl Backend for BaseProfSim {
         let id = self.get_meas_id();
         // Measurements are tracked separately from instructions, so that they can be
         // deferred until the end of the program.
-        write_mz(&mut self.measurements, q, id);
+        writeln!(
+            self.measurements,
+            "  call void @__quantum__qis__mz__body({}, {}) #1",
+            Qubit(q),
+            Result(id),
+        )
+        .expect("writing to string should succeed");
         id
     }
 
@@ -242,76 +274,156 @@ impl Backend for BaseProfSim {
 
     fn rx(&mut self, theta: f64, q: usize) {
         let q = self.map(q);
-        write_rx(&mut self.instrs, theta, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__rx__body({}, {})",
+            Double(theta),
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn rxx(&mut self, theta: f64, q0: usize, q1: usize) {
         let q0 = self.map(q0);
         let q1 = self.map(q1);
-        write_rxx(&mut self.instrs, theta, q0, q1);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__rxx__body({}, {}, {})",
+            Double(theta),
+            Qubit(q0),
+            Qubit(q1),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn ry(&mut self, theta: f64, q: usize) {
         let q = self.map(q);
-        write_ry(&mut self.instrs, theta, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__ry__body({}, {})",
+            Double(theta),
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn ryy(&mut self, theta: f64, q0: usize, q1: usize) {
         let q0 = self.map(q0);
         let q1 = self.map(q1);
-        write_ryy(&mut self.instrs, theta, q0, q1);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__ryy__body({}, {}, {})",
+            Double(theta),
+            Qubit(q0),
+            Qubit(q1),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn rz(&mut self, theta: f64, q: usize) {
         let q = self.map(q);
-        write_rz(&mut self.instrs, theta, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__rz__body({}, {})",
+            Double(theta),
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn rzz(&mut self, theta: f64, q0: usize, q1: usize) {
         let q0 = self.map(q0);
         let q1 = self.map(q1);
-        write_rzz(&mut self.instrs, theta, q0, q1);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__rzz__body({}, {}, {})",
+            Double(theta),
+            Qubit(q0),
+            Qubit(q1),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn sadj(&mut self, q: usize) {
         let q = self.map(q);
-        write_sadj(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__s__adj({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn s(&mut self, q: usize) {
         let q = self.map(q);
-        write_s(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__s__body({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn swap(&mut self, q0: usize, q1: usize) {
         let q0 = self.map(q0);
         let q1 = self.map(q1);
-        write_swap(&mut self.instrs, q0, q1);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__swap__body({}, {})",
+            Qubit(q0),
+            Qubit(q1),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn tadj(&mut self, q: usize) {
         let q = self.map(q);
-        write_tadj(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__t__adj({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn t(&mut self, q: usize) {
         let q = self.map(q);
-        write_t(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__t__body({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn x(&mut self, q: usize) {
         let q = self.map(q);
-        write_x(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__x__body({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn y(&mut self, q: usize) {
         let q = self.map(q);
-        write_y(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__y__body({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn z(&mut self, q: usize) {
         let q = self.map(q);
-        write_z(&mut self.instrs, q);
+        writeln!(
+            self.instrs,
+            "  call void @__quantum__qis__z__body({})",
+            Qubit(q),
+        )
+        .expect("writing to string should succeed");
     }
 
     fn qubit_allocate(&mut self) -> usize {
