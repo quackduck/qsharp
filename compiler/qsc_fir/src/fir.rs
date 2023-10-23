@@ -1281,8 +1281,12 @@ pub enum Lit {
     Int(i64),
     /// A Pauli operator literal.
     Pauli(Pauli),
+    /// A qubit identifier literal.
+    QubitId(usize),
     /// A measurement result literal.
     Result(Result),
+    /// A measurement result identiier literal.
+    ResultId(usize),
 }
 
 impl Display for Lit {
@@ -1293,7 +1297,9 @@ impl Display for Lit {
             Lit::Double(val) => write!(f, "Double({val})")?,
             Lit::Int(val) => write!(f, "Int({val})")?,
             Lit::Pauli(val) => write!(f, "Pauli({val:?})")?,
+            Lit::QubitId(val) => write!(f, "QubitId({val})")?,
             Lit::Result(val) => write!(f, "Result({val:?})")?,
+            Lit::ResultId(val) => write!(f, "ResultId({val})")?,
         }
         Ok(())
     }

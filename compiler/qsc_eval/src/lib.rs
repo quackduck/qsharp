@@ -1430,8 +1430,10 @@ fn lit_to_val(lit: &Lit) -> Value {
         Lit::Double(v) => Value::Double(*v),
         Lit::Int(v) => Value::Int(*v),
         Lit::Pauli(v) => Value::Pauli(*v),
+        Lit::QubitId(_) => panic!("unexpected qubit id literal"),
         Lit::Result(fir::Result::Zero) => Value::RESULT_ZERO,
         Lit::Result(fir::Result::One) => Value::RESULT_ONE,
+        Lit::ResultId(_) => panic!("unexpected result id literal"),
     }
 }
 
