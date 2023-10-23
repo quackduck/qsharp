@@ -6,3 +6,4 @@
 
 pub mod qir_base;
 mod qir_writer;
+pub mod qir_gen;
