@@ -2181,3 +2181,162 @@ fn nested_interpolated_string_with_exprs() {
                 Lit: " baz""#]],
     );
 }
+
+#[test]
+fn recover_paren_expr() {
+    check(
+        expr,
+        r#"(-)"#,
+        &expect![[r#"
+            Expr _id_ [0-3]: Paren: Expr _id_ [1-2]: Err
+
+            [
+                Error(
+                    Rule(
+                        "expression",
+                        Close(
+                            Paren,
+                        ),
+                        Span {
+                            lo: 2,
+                            hi: 3,
+                        },
+                    ),
+                ),
+            ]"#]],
+    );
+}
+
+#[test]
+fn recover_tuple_final_sep() {
+    check(
+        expr,
+        r#"(-,)"#,
+        &expect![[r#"
+            Expr _id_ [0-4]: Tuple:
+                Expr _id_ [1-2]: Err
+
+            [
+                Error(
+                    Rule(
+                        "expression",
+                        Comma,
+                        Span {
+                            lo: 2,
+                            hi: 3,
+                        },
+                    ),
+                ),
+            ]"#]],
+    );
+}
+
+#[test]
+fn recover_tuple() {
+    check(
+        expr,
+        r#"(-,-)"#,
+        &expect![[r#"
+            Expr _id_ [0-5]: Tuple:
+                Expr _id_ [1-2]: Err
+                Expr _id_ [3-4]: Err
+
+            [
+                Error(
+                    Rule(
+                        "expression",
+                        Comma,
+                        Span {
+                            lo: 2,
+                            hi: 3,
+                        },
+                    ),
+                ),
+                Error(
+                    Rule(
+                        "expression",
+                        Close(
+                            Paren,
+                        ),
+                        Span {
+                            lo: 4,
+                            hi: 5,
+                        },
+                    ),
+                ),
+            ]"#]],
+    );
+}
+
+#[test]
+fn recover_tuple_empty_expr() {
+    check(
+        expr,
+        r#"(3,,)"#,
+        &expect![[r#"
+            Expr _id_ [0-5]: Tuple:
+                Expr _id_ [1-2]: Lit: Int(3)
+                Expr _id_ [3-4]: Err
+
+            [
+                Error(
+                    Rule(
+                        "expression",
+                        Comma,
+                        Span {
+                            lo: 3,
+                            hi: 4,
+                        },
+                    ),
+                ),
+            ]"#]],
+    );
+}
+
+#[test]
+fn recover_tuple_comma_beginning() {
+    check(
+        expr,
+        r#"(,3)"#,
+        &expect![[r#"
+            Expr _id_ [0-4]: Tuple:
+                Expr _id_ [1-2]: Err
+                Expr _id_ [2-3]: Lit: Int(3)
+
+            [
+                Error(
+                    Rule(
+                        "expression",
+                        Comma,
+                        Span {
+                            lo: 1,
+                            hi: 2,
+                        },
+                    ),
+                ),
+            ]"#]],
+    );
+}
+
+#[test]
+fn recover_tuple_just_comma() {
+    check(
+        expr,
+        r#"(,)"#,
+        &expect![[r#"
+            Expr _id_ [0-3]: Paren: Expr _id_ [1-2]: Err
+
+            [
+                Error(
+                    Rule(
+                        "expression",
+                        Comma,
+                        Span {
+                            lo: 1,
+                            hi: 2,
+                        },
+                    ),
+                ),
+            ]"#]],
+    );
+}

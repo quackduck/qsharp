@@ -13,7 +13,7 @@ use crate::{
         ClosedBinOp, Delim, InterpolatedEnding, InterpolatedStart, Radix, StringToken, Token,
         TokenKind,
     },
-    prim::{ident, opt, pat, path, seq, shorten, token},
+    prim::{barrier, ident, opt, pat, path, recovering, seq, shorten, token, FinalSep},
     scan::Scanner,
     stmt, Error, ErrorKind, Result,
 };
@@ -152,7 +152,7 @@ fn expr_op(s: &mut Scanner, context: OpContext) -> Result<Box<Expr>> {
 fn expr_base(s: &mut Scanner) -> Result<Box<Expr>> {
     let lo = s.peek().span.lo;
     let kind = if token(s, TokenKind::Open(Delim::Paren)).is_ok() {
-        let (exprs, final_sep) = seq(s, expr)?;
+        let (exprs, final_sep) = recovering_expr_seq(s)?;
         token(s, TokenKind::Close(Delim::Paren))?;
         Ok(Box::new(final_sep.reify(
             exprs,
@@ -642,7 +642,7 @@ fn index_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {
 
 fn call_op(s: &mut Scanner, lhs: Box<Expr>) -> Result<Box<ExprKind>> {
     let lo = s.span(0).hi - 1;
-    let (args, final_sep) = seq(s, expr)?;
+    let (args, final_sep) = recovering_expr_seq(s)?;
     token(s, TokenKind::Close(Delim::Paren))?;
     let rhs = Box::new(Expr {
         id: NodeId::default(),
@@ -726,4 +726,46 @@ fn unescape(s: &str) -> result::Result<String, usize> {
     }
 
     Ok(buf)
+}
+
+/// Similar to `seq()` except it can recover from
+/// missing elements ( e.g. `,foo,,` ) and error expressions (e.g. `1,-bad-,2`)
+fn recovering_expr_seq(s: &mut Scanner<'_>) -> Result<(Vec<Box<Expr>>, FinalSep)> {
+    const BARRIER_TOKENS: &[TokenKind] = &[TokenKind::Close(Delim::Paren), TokenKind::Comma];
+
+    barrier(s, BARRIER_TOKENS, |s| {
+        let mut xs = Vec::new();
+        let mut final_sep = FinalSep::Missing;
+        loop {
+            let offset = s.peek().span.lo;
+            if let Some(x) = opt(s, |s| recovering(s, default, &[], expr))? {
+                xs.push(x);
+                if token(s, TokenKind::Comma).is_ok() {
+                    final_sep = FinalSep::Present;
+                } else {
+                    final_sep = FinalSep::Missing;
+                    break;
+                }
+            } else if token(s, TokenKind::Comma).is_ok() {
+                // A comma at the beginning or after another
+                // comma. A missing expression.
+                let span = s.span(offset);
+                s.push_error(Error(ErrorKind::Rule("expression", TokenKind::Comma, span)));
+                xs.push(default(span));
+            } else {
+                // we didn't parse anything
+                break;
+            }
+        }
+
+        Ok((xs, final_sep))
+    })
+}
+
+fn default(span: Span) -> Box<Expr> {
+    Box::new(Expr {
+        id: NodeId::default(),
+        span,
+        kind: Box::new(ExprKind::Err),
+    })
 }
