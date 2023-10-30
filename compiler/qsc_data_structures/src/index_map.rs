@@ -12,6 +12,7 @@ use std::{
 pub struct IndexMap<K, V> {
     _keys: PhantomData<K>,
     values: Vec<Option<V>>,
+    reported_sparse_warning: bool,
 }
 
 impl<K, V> IndexMap<K, V> {
@@ -67,6 +68,16 @@ impl<K: Into<usize>, V> IndexMap<K, V> {
             self.values.resize_with(index + 1, || None);
         }
         self.values[index] = Some(value);
+
+        let len = self.values.len();
+        let count = self.values.iter().filter(|v| v.is_some()).count();
+        if len > 100 && count < (len / 20) && !self.reported_sparse_warning {
+            let bt = std::backtrace::Backtrace::capture();
+            // only report once
+            self.reported_sparse_warning = true;
+            eprintln!("IndexMap is sparse, with len={len}, count={count}",);
+            eprintln!("{bt}");
+        }
     }
 
     pub fn contains_key(&self, key: K) -> bool {
@@ -94,6 +105,7 @@ impl<K, V: Clone> Clone for IndexMap<K, V> {
         Self {
             _keys: PhantomData,
             values: self.values.clone(),
+            reported_sparse_warning: false,
         }
     }
 }
@@ -111,6 +123,7 @@ impl<K, V> Default for IndexMap<K, V> {
         Self {
             _keys: PhantomData,
             values: Vec::default(),
+            reported_sparse_warning: false,
         }
     }
 }
