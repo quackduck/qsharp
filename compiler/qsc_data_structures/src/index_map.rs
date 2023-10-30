@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rustc_hash::FxHashMap;
 use std::{
+    cell::RefCell,
     fmt::{self, Debug, Formatter},
     iter::Enumerate,
     marker::PhantomData,
@@ -12,8 +14,11 @@ use std::{
 pub struct IndexMap<K, V> {
     _keys: PhantomData<K>,
     values: Vec<Option<V>>,
-    reported_sparse_warning: bool,
+    resize_count: u32,
 }
+
+thread_local! {pub static DENSITY_TRACKER: RefCell<FxHashMap<String, (usize, usize)>> =
+RefCell::new(FxHashMap::default()); }
 
 impl<K, V> IndexMap<K, V> {
     #[must_use]
@@ -65,19 +70,39 @@ impl<K: Into<usize>, V> IndexMap<K, V> {
     pub fn insert(&mut self, key: K, value: V) {
         let index = key.into();
         if index >= self.values.len() {
+            let old_capacity = self.values.capacity();
             self.values.resize_with(index + 1, || None);
+            if self.values.capacity() > old_capacity {
+                self.resize_count += 1;
+            }
+            if self.resize_count == 10 {
+                let bt = std::backtrace::Backtrace::capture();
+                eprintln!(
+                    "Resized IndexMap ten times already, maybe reserve the length in advance?",
+                );
+                eprintln!(
+                    "  {}",
+                    bt.to_string().split('\n').nth(2).expect("expected a frame")
+                );
+            }
         }
         self.values[index] = Some(value);
 
         let len = self.values.len();
         let count = self.values.iter().filter(|v| v.is_some()).count();
-        if len > 100 && count < (len / 20) && !self.reported_sparse_warning {
-            let bt = std::backtrace::Backtrace::capture();
-            // only report once
-            self.reported_sparse_warning = true;
-            eprintln!("IndexMap is sparse, with len={len}, count={count}",);
-            eprintln!("{bt}");
-        }
+        let this_id = format!(
+            "{self:p} {}",
+            std::backtrace::Backtrace::capture()
+                .to_string()
+                .split('\n')
+                .nth(2)
+                .expect("expected a frame")
+        );
+        DENSITY_TRACKER.with_borrow_mut(|d| {
+            let max_count = d.get(&this_id).map_or(0, |e| e.1);
+            let max_count = if count > max_count { count } else { max_count };
+            d.insert(this_id, (len, max_count))
+        });
     }
 
     pub fn contains_key(&self, key: K) -> bool {
@@ -105,7 +130,7 @@ impl<K, V: Clone> Clone for IndexMap<K, V> {
         Self {
             _keys: PhantomData,
             values: self.values.clone(),
-            reported_sparse_warning: false,
+            resize_count: 0,
         }
     }
 }
@@ -123,7 +148,7 @@ impl<K, V> Default for IndexMap<K, V> {
         Self {
             _keys: PhantomData,
             values: Vec::default(),
-            reported_sparse_warning: false,
+            resize_count: 0,
         }
     }
 }

@@ -9,6 +9,7 @@ use log::info;
 use miette::{Context, IntoDiagnostic, Report};
 use qsc::compile::compile;
 use qsc_codegen::qir_base;
+use qsc_data_structures::index_map::DENSITY_TRACKER;
 use qsc_frontend::{
     compile::{PackageStore, SourceContents, SourceMap, SourceName, TargetProfile},
     error::WithSource,
@@ -109,6 +110,15 @@ fn main() -> miette::Result<ExitCode> {
             }
         }
     }
+
+    DENSITY_TRACKER.with_borrow(|d| {
+        for map in d {
+            let (len, count) = *map.1;
+            if len > 100 && count < (len / 20) {
+                eprintln!("{} is sparse, len={len}, count={count}", map.0);
+            }
+        }
+    });
 
     if errors.is_empty() {
         Ok(ExitCode::SUCCESS)
