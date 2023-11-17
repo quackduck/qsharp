@@ -1,8 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from qsharp._native import Interpreter, Result, Pauli, QSharpError, TargetProfile
+from qsharp._native import (
+    Interpreter,
+    Result,
+    Pauli,
+    QSharpError,
+    TargetProfile,
+)
 import pytest
+import os
 
 
 # Tests for the native Q# interpreter class
@@ -42,6 +49,7 @@ def test_dump_output() -> None:
     )
     assert called
 
+
 def test_dump_machine() -> None:
     e = Interpreter(TargetProfile.Full)
 
@@ -65,6 +73,7 @@ def test_dump_machine() -> None:
     state_dict = state_dump.get_dict()
     assert state_dict[1][0] == 1.0
     assert state_dict[1][1] == 0.0
+
 
 def test_error() -> None:
     e = Interpreter(TargetProfile.Full)
@@ -194,3 +203,40 @@ def test_run_with_shots() -> None:
     assert called == 5
 
     assert value == [None, None, None, None, None]
+
+
+def test_load_project() -> None:
+    e = Interpreter(
+        TargetProfile.Full,
+        {"manifest_dir": ".", "manifest": {}},
+        read_file_memfs,
+        list_directory_memfs,
+    )
+    result = e.interpret("Test.ReturnsFour()")
+    assert result == 4
+
+
+def read_file_memfs(path):
+    if path == "./test.qs":
+        return ("./test.qs", "namespace Test { operation ReturnsFour() : Int { 4 } }")
+    raise Exception("File not found: " + path)
+
+
+def list_directory_memfs(dir_path):
+    if dir_path == ".":
+        return [
+            {
+                "path": dir_path + "/test.qs",
+                "entry_name": "test.qs",
+                "extension": "qs",
+                "type": "file",
+            },
+            {
+                "path": dir_path + "/empty",
+                "entry_name": "empty",
+                "extension": "",
+                "type": "folder",
+            },
+        ]
+    else:
+        return []

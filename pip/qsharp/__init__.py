@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from ._qsharp import init, eval, eval_file, run, compile, dump_machine
+from ._qsharp import init, eval, run, compile, dump_machine
 
 from ._native import Result, Pauli, QSharpError, TargetProfile, StateDump
 
@@ -19,7 +19,6 @@ except NameError:
 __all__ = [
     "init",
     "eval",
-    "eval_file",
     "run",
     "dump_machine",
     "compile",
@@ -27,5 +26,5 @@ __all__ = [
     "Pauli",
     "QSharpError",
     "TargetProfile",
-    "StateDump"
+    "StateDump",
 ]

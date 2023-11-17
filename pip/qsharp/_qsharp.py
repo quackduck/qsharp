@@ -6,16 +6,38 @@ from ._native import Interpreter, TargetProfile, StateDump
 _interpreter = None
 
 
-def init(target_profile: TargetProfile = TargetProfile.Full) -> None:
+def init(target_profile: TargetProfile = TargetProfile.Full, project_root=None) -> None:
     """
     Initializes the Q# interpreter.
 
     :param target_profile: Setting the target profile allows the Q#
         interpreter to generate programs that are compatible
         with a specific target. See :py:class: `qsharp.TargetProfile`.
+
+    :param project_root: The root directory of the Q# project. It must
+        contain a qsharp.json project manifest.
     """
     global _interpreter
-    _interpreter = Interpreter(target_profile)
+
+    manifest_descriptor = None
+    if project_root is not None:
+        import os
+
+        qsharp_json = os.path.join(project_root, "qsharp.json")
+        if not os.path.exists(qsharp_json):
+            raise ValueError("qsharp.json not found at project root")
+
+        import json
+
+        manifest_descriptor = {}
+        manifest_descriptor["manifest_dir"] = project_root
+        manifest_descriptor["manifest"] = json.loads(
+            open(qsharp_json, mode="r", encoding="utf-8").read()
+        )
+
+    _interpreter = Interpreter(
+        target_profile, manifest_descriptor, _read_file, _list_directory
+    )
 
 
 def get_interpreter() -> Interpreter:
@@ -47,18 +69,6 @@ def eval(source):
     return get_interpreter().interpret(source, callback)
 
 
-def eval_file(path):
-    """
-    Reads Q# source code from a file and evaluates it.
-
-    :param path: The path to the Q# source file.
-    :returns: The value returned by the last statement in the file.
-    :raises: QSharpError
-    """
-    f = open(path, mode="r", encoding="utf-8")
-    return eval(f.read())
-
-
 def run(entry_expr, shots):
     """
     Runs the given Q# expressin for the given number of shots.
@@ -88,6 +98,7 @@ def compile(entry_expr):
     ll_str = get_interpreter().qir(entry_expr)
     return QirInputData("main", ll_str)
 
+
 def dump_machine() -> StateDump:
     """
     Returns the sparse state vector of the simulator as a StateDump object.
@@ -116,3 +127,28 @@ class QirInputData:
     # by the protocol and must remain unchanged.
     def _repr_qir_(self, **kwargs) -> bytes:
         return self._ll_str.encode("utf-8")
+
+
+def _read_file(path):
+    f = open(path, mode="r", encoding="utf-8")
+    return (path, f.read())
+
+
+def _list_directory(dir_path):
+    import os
+
+    return list(
+        map(
+            lambda e: {
+                "path": os.path.join(dir_path, e),
+                "entry_name": e,
+                "extension": os.path.splitext(e)[1][1:],
+                "type": "file"
+                if os.path.isfile(os.path.join(dir_path, e))
+                else "folder"
+                if os.path.isdir(os.path.join(dir_path, e))
+                else "unknown",
+            },
+            os.listdir(dir_path),
+        )
+    )

@@ -30,11 +30,14 @@ class TargetProfile:
 class Interpreter:
     """A Q# interpreter."""
 
-    def __init__(self, target_profile: TargetProfile) -> None:
+    def __init__(
+        self, target_profile: TargetProfile, manifest_descriptor: Optional[dict]
+    ) -> None:
         """
         Initializes the Q# interpreter.
 
         :param target_profile: The target profile to use for the interpreter.
+        :param manifest_descriptor: A dictionary that represents the manifest descriptor
         """
         ...
     def interpret(self, input: str, output_fn: Callable[[Output], None]) -> Any:
@@ -74,7 +77,6 @@ class Interpreter:
         :returns qir: The QIR string.
         """
         ...
-
     def dump_machine(self) -> StateDump:
         """
         Returns the sparse state vector of the simulator as a StateDump object.

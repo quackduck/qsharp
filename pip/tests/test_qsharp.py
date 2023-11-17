@@ -32,6 +32,7 @@ def test_stdout_multiple_lines() -> None:
 
     assert f.getvalue() == "STATE:\n|0⟩: 1.0000+0.0000𝑖\nHello!\n"
 
+
 def test_dump_machine() -> None:
     qsharp.init(target_profile=qsharp.TargetProfile.Full)
     qsharp.eval(
@@ -58,3 +59,9 @@ def test_compile_qir_input_data() -> None:
     operation = qsharp.compile("Program()")
     qir = operation._repr_qir_()
     assert isinstance(qir, bytes)
+
+
+def test_project_root():
+    qsharp.init(target_profile=qsharp.TargetProfile.Full, project_root="./test_project")
+    result = qsharp.eval("Foo.ReturnsThree()")
+    assert result == 3
