@@ -6,7 +6,9 @@ from ._native import Interpreter, TargetProfile, StateDump
 _interpreter = None
 
 
-def init(target_profile: TargetProfile = TargetProfile.Full, project_root=None) -> None:
+def init(
+    *, target_profile: TargetProfile = TargetProfile.Full, project_root=None
+) -> None:
     """
     Initializes the Q# interpreter.
 
@@ -40,18 +42,6 @@ def init(target_profile: TargetProfile = TargetProfile.Full, project_root=None) 
     )
 
 
-def get_interpreter() -> Interpreter:
-    """
-    Returns the Q# interpreter.
-
-    :returns: The Q# interpreter.
-    """
-    global _interpreter
-    if _interpreter is None:
-        init()
-    return _interpreter
-
-
 def eval(source):
     """
     Evaluates Q# source code.
@@ -66,7 +56,7 @@ def eval(source):
     def callback(output):
         print(output)
 
-    return get_interpreter().interpret(source, callback)
+    return _get_interpreter().interpret(source, callback)
 
 
 def run(entry_expr, shots):
@@ -85,7 +75,7 @@ def run(entry_expr, shots):
     def callback(output):
         print(output)
 
-    return get_interpreter().run(entry_expr, shots, callback)
+    return _get_interpreter().run(entry_expr, shots, callback)
 
 
 def compile(entry_expr):
@@ -95,7 +85,7 @@ def compile(entry_expr):
     :param entry_expr: The Q# expression that will be used as the entrypoint
         for the program.
     """
-    ll_str = get_interpreter().qir(entry_expr)
+    ll_str = _get_interpreter().qir(entry_expr)
     return QirInputData("main", ll_str)
 
 
@@ -105,7 +95,19 @@ def dump_machine() -> StateDump:
 
     :returns: The state of the simulator.
     """
-    return get_interpreter().dump_machine()
+    return _get_interpreter().dump_machine()
+
+
+def _get_interpreter() -> Interpreter:
+    """
+    Returns the Q# interpreter.
+
+    :returns: The Q# interpreter.
+    """
+    global _interpreter
+    if _interpreter is None:
+        init()
+    return _interpreter
 
 
 # Class that wraps generated QIR, which can be used by
