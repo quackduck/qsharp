@@ -134,7 +134,7 @@ async fn clear_on_document_close() {
         "#]],
     );
 
-    ls.close_document("foo.qs").await;
+    ls.close_document("foo.qs");
 
     expect_errors(
         &errors,
@@ -198,8 +198,7 @@ async fn package_type_update_causes_error() {
     ls.update_configuration(&WorkspaceConfigurationUpdate {
         target_profile: None,
         package_type: Some(PackageType::Lib),
-    })
-    .await;
+    });
 
     ls.update_document("foo.qs", 1, "namespace Foo { operation Main() : Unit {} }")
         .await;
@@ -214,8 +213,7 @@ async fn package_type_update_causes_error() {
     ls.update_configuration(&WorkspaceConfigurationUpdate {
         target_profile: None,
         package_type: Some(PackageType::Exe),
-    })
-    .await;
+    });
 
     expect_errors(
         &errors,
@@ -247,8 +245,7 @@ async fn target_profile_update_fixes_error() {
     ls.update_configuration(&WorkspaceConfigurationUpdate {
         target_profile: Some(TargetProfile::Base),
         package_type: Some(PackageType::Lib),
-    })
-    .await;
+    });
 
     ls.update_document(
         "foo.qs",
@@ -306,8 +303,7 @@ async fn target_profile_update_fixes_error() {
     ls.update_configuration(&WorkspaceConfigurationUpdate {
         target_profile: Some(TargetProfile::Full),
         package_type: None,
-    })
-    .await;
+    });
 
     expect_errors(
         &errors,
@@ -346,8 +342,7 @@ async fn target_profile_update_causes_error_in_stdlib() {
     ls.update_configuration(&WorkspaceConfigurationUpdate {
         target_profile: Some(TargetProfile::Base),
         package_type: None,
-    })
-    .await;
+    });
 
     expect_errors(
         &errors,
@@ -406,8 +401,7 @@ async fn notebook_document_no_errors() {
             ("cell2", 1, "Main()"),
         ]
         .into_iter(),
-    )
-    .await;
+    );
 
     expect_errors(
         &errors,
@@ -429,8 +423,7 @@ async fn notebook_document_errors() {
             ("cell2", 1, "Foo()"),
         ]
         .into_iter(),
-    )
-    .await;
+    );
 
     expect_errors(
         &errors,
@@ -488,8 +481,7 @@ async fn notebook_update_remove_cell_clears_errors() {
             ("cell2", 1, "Foo()"),
         ]
         .into_iter(),
-    )
-    .await;
+    );
 
     expect_errors(
         &errors,
@@ -537,8 +529,7 @@ async fn notebook_update_remove_cell_clears_errors() {
     ls.update_notebook_document(
         "notebook.ipynb",
         [("cell1", 1, "operation Main() : Unit {}")].into_iter(),
-    )
-    .await;
+    );
 
     expect_errors(
         &errors,
@@ -566,8 +557,7 @@ async fn close_notebook_clears_errors() {
             ("cell2", 1, "Foo()"),
         ]
         .into_iter(),
-    )
-    .await;
+    );
 
     expect_errors(
         &errors,
@@ -612,8 +602,7 @@ async fn close_notebook_clears_errors() {
         "#]],
     );
 
-    ls.close_notebook_document("notebook.ipynb", ["cell1", "cell2"].into_iter())
-        .await;
+    ls.close_notebook_document("notebook.ipynb", ["cell1", "cell2"].into_iter());
 
     expect_errors(
         &errors,
@@ -643,12 +632,7 @@ fn new_language_service(received: &RefCell<Vec<ErrorInfo>>) -> LanguageService<'
     };
 
     LanguageService::new(
-        move |x| {
-            Box::pin({
-                diagnostic_receiver(x);
-                std::future::ready(())
-            })
-        },
+        diagnostic_receiver,
         // these tests do not test project mode
         // so we provide
         |_| Box::pin(std::future::ready((Arc::from(""), Arc::from("")))),
